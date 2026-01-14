@@ -57,8 +57,8 @@
   let {
     data = [],
     orientation = "horizontal",
-    lineColor = "#4a5568",
-    branchColor = "#4a5568",
+    lineColor = "#6F5548",
+    branchColor = "#755950",
     lineWidth = 2,
     lineLeafGap = 300,
     lineLeafSize = 20,
