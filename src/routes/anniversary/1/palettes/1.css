@@ -1,0 +1,11 @@
+:global(:root) {
+    --bg-color: #fdf5e0;
+    --bg-color-alt: #d8ceb5;
+    --bg-color-accent: #d1e6d3;
+    --bg-color-dark: #254031;
+    --accent-color: #A8BF68;
+    --text-color-h1: #254031;
+    --text-color-h2: color-mix(in srgb, var(--text-color-h1) 70%, var(--accent-color));
+    --text-color-bright: ivory;
+    --text-color-bright-alt: color-mix(in srgb, var(--text-color-bright) 70%, var(--accent-color));
+}

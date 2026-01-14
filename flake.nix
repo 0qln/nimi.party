@@ -21,6 +21,7 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               nodejs_25
+              python3
             ];
           };
         };
