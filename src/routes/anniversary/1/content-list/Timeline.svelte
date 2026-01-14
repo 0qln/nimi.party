@@ -16,7 +16,10 @@
 
   import { select, type Selection } from "d3";
   import * as d3 from "d3";
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
+
+  import leafImg from "$lib/assets/frame/eucalyptus-leaf.png";
+  import { isBetween, mulberry32 } from "../utils";
 
   let timelineRef: SVGSVGElement;
   let branchesRef: SVGSVGElement;
@@ -27,6 +30,7 @@
   let containerHeight = $state(0);
 
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
+  //let leafsSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
 
   interface Props {
@@ -35,6 +39,8 @@
     lineColor?: string;
     branchColor?: string;
     lineWidth?: number;
+    lineLeafGap?: number | undefined;
+    lineLeafSize?: number | undefined;
     /// The space in px occupied by a single day.
     pxPerDay?: number;
     showBranches?: boolean;
@@ -54,6 +60,8 @@
     lineColor = "#4a5568",
     branchColor = "#4a5568",
     lineWidth = 2,
+    lineLeafGap = 300,
+    lineLeafSize = 20,
     pxPerDay = 150,
     showBranches = true,
     animate = false,
@@ -176,7 +184,7 @@
         const prev = data[index - 1];
 
         if (!prev) {
-          const width = firstEventX() - startX;
+          const width = firstDatumX() - startX;
           return acc + movePath(width / 2) + fadeInPath(width / 2);
         }
 
@@ -185,43 +193,6 @@
 
       startPath(startX, startY),
     );
-  }
-
-  $effect(() => {
-    const dims = {
-      width: containerWidth,
-      height: containerHeight,
-    };
-    tick().then(() => {
-      dims.width = Math.max(contentWidth(), containerWidth);
-
-      if (dims.width != 0 && dims.height != 0) {
-        requestAnimationFrame(() => {
-          drawTimeline(dims);
-        });
-      }
-    });
-  });
-
-  async function drawTimeline(dims: TimelineDimensions) {
-    if (!timelineRef || !branchesRef || !eventsRef || data.length === 0) return;
-
-    // 1. Render/Update Nodes DOM elements
-    await drawNodes();
-
-    // 2. Position everything
-    if (orientation === "horizontal") {
-      drawHorizontalTimeline(dims);
-    } else {
-      throw new Error(
-        "Vertical orientation not implemented in this D3 refactor yet.",
-      );
-    }
-  }
-
-  async function drawNodes() {
-    // Wait for Svelte to render so we can measure dimensions in the next step
-    await tick();
   }
 
   function eventWidth(event1: TimelineEvent, event2: TimelineEvent): number {
@@ -258,19 +229,23 @@
     return eventWidth(prev, curr);
   }
 
-  function firstEventX(): number {
+  function firstDatumX(): number {
     return padding + pxPerDay;
   }
 
+  function lastDatumX(): number {
+    return datumXPosition(data.length - 1);
+  }
+
   /// x position on the main line.
-  function eventXPosition(datumIndex: number): number {
+  function datumXPosition(datumIndex: number): number {
     return d3.reduce(
       data.slice(0, datumIndex + 1),
       function (acc, curr, index) {
         const prev = data[index - 1];
 
         if (!prev) {
-          return firstEventX();
+          return firstDatumX();
         }
 
         return acc + segmentWidth(prev, curr);
@@ -283,7 +258,7 @@
   function contentWidth(): number {
     return (
       padding * 2 +
-      eventXPosition(data.length - 1) +
+      datumXPosition(data.length - 1) +
       branchWidth(data[data.length - 1])
     );
   }
@@ -297,7 +272,7 @@
     branchWidth: number,
     node: Rect,
   ): number {
-    const segmentPos = eventXPosition(datumIndex);
+    const segmentPos = datumXPosition(datumIndex);
     return segmentPos - node.width / 2 + branchWidth;
   }
 
@@ -428,6 +403,43 @@
     return index % 2 === 0 ? "above" : "below";
   }
 
+  $effect(() => {
+    const dims = {
+      width: containerWidth,
+      height: containerHeight,
+    };
+    tick().then(() => {
+      dims.width = Math.max(contentWidth(), containerWidth);
+
+      if (dims.width != 0 && dims.height != 0) {
+        requestAnimationFrame(() => {
+          drawTimeline(dims);
+        });
+      }
+    });
+  });
+
+  async function drawTimeline(dims: TimelineDimensions) {
+    if (!timelineRef || !branchesRef || !eventsRef || data.length === 0) return;
+
+    // 1. Render/Update Nodes DOM elements
+    await drawNodes();
+
+    // 2. Position everything
+    if (orientation === "horizontal") {
+      drawHorizontalTimeline(dims);
+    } else {
+      throw new Error(
+        "Vertical orientation not implemented in this D3 refactor yet.",
+      );
+    }
+  }
+
+  async function drawNodes() {
+    // Wait for Svelte to render so we can measure dimensions in the next step
+    await tick();
+  }
+
   function drawHorizontalTimeline(dims: TimelineDimensions): void {
     const root = select(timelineRef);
     const branchRoot = select(branchesRef);
@@ -450,7 +462,7 @@
 
     const yPos = dims.height / 2;
 
-    // Draw Solid Path
+    // Draw Main Line
     timelineSel = root
       .append("path")
       .attr("d", mainPath(padding, yPos))
@@ -460,7 +472,6 @@
       .attr("class", "timeline-main-line");
 
     if (animate) {
-      // Animate Solid Line (Draw effect)
       const len = timelineSel.node()?.getTotalLength() || 0;
       timelineSel
         .attr("stroke-dasharray", len)
@@ -469,6 +480,63 @@
         .duration(animationDuration * 2)
         .ease(easingFunctions[easing])
         .attr("stroke-dashoffset", 0);
+    }
+
+    // Draw Main Line leafs
+    if (lineLeafGap) {
+      const leafs = [];
+      const rng = mulberry32(69);
+      for (let x = lineLeafGap * 2; x < lastDatumX(); x += lineLeafGap) {
+        // don't draw the leafes on skip squiggles
+        if (
+          skips().some(({ node: s, index }) =>
+            isBetween(
+              x,
+              datumXPosition(index) - skipWidth(s),
+              datumXPosition(index) + skipWidth(s),
+            ),
+          )
+        ) {
+          continue;
+        }
+
+        const height = lineLeafSize;
+        const width = lineLeafSize;
+        const index = x / lineLeafGap;
+        const pos = index % 2 == 0 ? "above" : "below";
+        const rngOff = lineLeafGap / 3;
+        const y = yPos + (pos == "above" ? -height : 0);
+        leafs.push({
+          pos,
+          index,
+          x: padding + x + rng({ lo: rngOff, hi: rngOff }),
+          y,
+          width,
+          height,
+          src: leafImg,
+        });
+      }
+
+      root
+        .selectAll("img.timeline-main-line-leaf")
+        .data(leafs)
+        .join("image")
+        .classed("timeline-main-line-leaf", true)
+        .attr("x", (d) => d.x)
+        .attr("y", (d) => d.y)
+        .attr("z", -1)
+        .attr("width", (d) => d.width)
+        .attr("height", (d) => d.height)
+        .attr(
+          "transform-origin",
+          (d) => `${d.x + d.width / 2} ${d.y + d.height / 2}`,
+        )
+        .attr(
+          "transform",
+          (d) => `rotate(${90 + (d.pos === "below" ? 45 : -45)})`,
+        )
+        .attr("href", (d) => d.src)
+        .attr("id", (d) => `timeline-main-line-leaf-${d.index}`);
     }
 
     // Bind data
@@ -503,7 +571,7 @@
       const { top, bottom } = anchorNodeY(expansion, pos, (a) =>
         defineNodeY(a, rect, dims),
       );
-      const xPos = eventXPosition(index);
+      const xPos = datumXPosition(index);
 
       // Node
       nodeSel
@@ -560,19 +628,19 @@
   bind:this={containerRef}
 >
   <svg
-    class="timeline-main"
-    bind:this={timelineRef}
-    width="100%"
-    height="100%"
-    aria-label="Timeline main line"
-  ></svg>
-
-  <svg
     class="timeline-branches"
     bind:this={branchesRef}
     width="100%"
     height="100%"
     aria-label="Timeline branches"
+  ></svg>
+
+  <svg
+    class="timeline-main"
+    bind:this={timelineRef}
+    width="100%"
+    height="100%"
+    aria-label="Timeline main line"
   ></svg>
 
   <div class="timeline-nodes" bind:this={eventsRef}>
