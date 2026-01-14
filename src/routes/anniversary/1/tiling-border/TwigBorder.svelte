@@ -21,7 +21,9 @@
     width: number;
     height: number;
   }
-  let dims: Size = $state({ width: 0, height: 0 });
+  let containerWidth = $state(0);
+  let containerHeight = $state(0);
+  let dims: Size = $derived({ width: containerWidth, height: containerHeight });
 
   interface TileData {
     size: Size;
@@ -29,22 +31,6 @@
   let tileInfo: TileData = {
     size: { width: sizeVal, height: sizeVal },
   };
-
-  function updateDimensions(): void {
-    if (containerRef) {
-      dims = {
-        width: containerRef.clientWidth,
-        height: containerRef.clientHeight,
-      };
-    }
-  }
-
-  onMount(() => {
-    updateDimensions();
-    const unsubscribe = on(window, "resize", updateDimensions);
-
-    return unsubscribe;
-  });
 
   $effect(() => {
     const dimensions = $state.snapshot(dims);
@@ -212,6 +198,8 @@
   class={["tiling-border", "wrap-content"]}
   style="--size: {size}px"
   bind:this={containerRef}
+  bind:clientWidth={containerWidth}
+  bind:clientHeight={containerHeight}
 >
   <div class="tiling-content wrap-content">
     <div class={["content", "wrap-content", ...clazz]}>

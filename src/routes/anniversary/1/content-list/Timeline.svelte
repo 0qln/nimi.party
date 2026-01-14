@@ -1,11 +1,9 @@
 <svelte:options customElement="time-line" />
 
 <script lang="ts">
-  import { onMount, tick } from "svelte";
   import {
     type TimelineOrientation,
     type AnimationEasing,
-    type TimelineDimensions,
     type TimelineData,
     type TimelineEvent,
     TimelineNodeType,
@@ -13,21 +11,23 @@
     type TimelineNodeExpansion,
     TimelineSkip,
     type TimelineDatum,
+    type TimelineDimensions,
   } from "./types";
 
   import { select, type Selection } from "d3";
   import * as d3 from "d3";
-  import { on } from "svelte/events";
+  import { onMount, tick } from "svelte";
 
   let timelineRef: SVGSVGElement;
   let branchesRef: SVGSVGElement;
   let eventsRef: HTMLDivElement;
   let containerRef: HTMLDivElement;
 
+  let containerWidth = $state(0);
+  let containerHeight = $state(0);
+
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
-
-  let dims: TimelineDimensions = $state({ width: 0, height: 0 });
 
   interface Props {
     data: TimelineData;
@@ -56,7 +56,7 @@
     lineWidth = 2,
     pxPerDay = 150,
     showBranches = true,
-    animate = true,
+    animate = false,
     animationDuration = 800,
     easing = "cubic",
     padding = 50,
@@ -170,7 +170,6 @@
   }
 
   function mainPath(startX: number, startY: number): string {
-    // Build path strings for solid and skipped (squiggle) sections
     return d3.reduce(
       data,
       function (acc, datum, index) {
@@ -188,35 +187,23 @@
     );
   }
 
-  onMount(() => {
-    updateDimensions();
-    const unsubscribe = on(window, "resize", updateDimensions);
-    return unsubscribe;
-  });
-
   $effect(() => {
-    if (data.length > 0 && containerRef) {
-      requestAnimationFrame(() => {
-        drawTimeline();
-      });
-    }
+    const dims = {
+      width: containerWidth,
+      height: containerHeight,
+    };
+    tick().then(() => {
+      dims.width = Math.max(contentWidth(), containerWidth);
+
+      if (dims.width != 0 && dims.height != 0) {
+        requestAnimationFrame(() => {
+          drawTimeline(dims);
+        });
+      }
+    });
   });
 
-  function updateDimensions(): void {
-    if (containerRef && containerRef.parentElement) {
-      // Measure parent to allow the timeline to shrink if the window shrinks
-      // Using containerRef.clientWidth would just read the potentially huge fixed width we set previously
-      const availableWidth = containerRef.parentElement.clientWidth;
-
-      // We update dims, but the actual drawing logic will decide if we need MORE than this
-      dims = {
-        width: availableWidth,
-        height: containerRef.clientHeight,
-      };
-    }
-  }
-
-  async function drawTimeline() {
+  async function drawTimeline(dims: TimelineDimensions) {
     if (!timelineRef || !branchesRef || !eventsRef || data.length === 0) return;
 
     // 1. Render/Update Nodes DOM elements
@@ -224,7 +211,7 @@
 
     // 2. Position everything
     if (orientation === "horizontal") {
-      drawHorizontalTimeline();
+      drawHorizontalTimeline(dims);
     } else {
       throw new Error(
         "Vertical orientation not implemented in this D3 refactor yet.",
@@ -330,7 +317,11 @@
     }
   }
 
-  function defineNodeY(relativeTo: "top" | "bottom", node: Rect): number {
+  function defineNodeY(
+    relativeTo: "top" | "bottom",
+    node: Rect,
+    dims: TimelineDimensions,
+  ): number {
     switch (relativeTo) {
       case "top":
         return node.y;
@@ -437,7 +428,7 @@
     return index % 2 === 0 ? "above" : "below";
   }
 
-  function drawHorizontalTimeline(): void {
+  function drawHorizontalTimeline(dims: TimelineDimensions): void {
     const root = select(timelineRef);
     const branchRoot = select(branchesRef);
 
@@ -455,7 +446,7 @@
 
     // Apply width to container and update state
     select(containerRef).style("width", `${finalWidth}px`);
-    dims.width = finalWidth;
+    dims = { width: finalWidth, height: dims.height };
 
     const yPos = dims.height / 2;
 
@@ -510,7 +501,7 @@
 
       const left = rect.x;
       const { top, bottom } = anchorNodeY(expansion, pos, (a) =>
-        defineNodeY(a, rect),
+        defineNodeY(a, rect, dims),
       );
       const xPos = eventXPosition(index);
 
@@ -560,13 +551,14 @@
       }
     });
   }
-
-  let widths: number[] = $state([]);
-  let heights: number[] = $state([]);
-  //$inspect(widths);
 </script>
 
-<div class="timeline-container" bind:this={containerRef}>
+<div
+  class="timeline-container"
+  bind:clientWidth={containerWidth}
+  bind:clientHeight={containerHeight}
+  bind:this={containerRef}
+>
   <svg
     class="timeline-main"
     bind:this={timelineRef}
@@ -590,8 +582,6 @@
         class="timeline-node-container"
         style="position: absolute; left: 0px; top: 0px;"
         aria-label={`Timeline node ${i + 1}`}
-        bind:clientWidth={widths[i]}
-        bind:clientHeight={heights[i]}
       >
         <node.component {...node.props} />
       </div>
@@ -604,7 +594,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: 750px;
+    min-height: 80vh;
     overflow: visible;
   }
 
