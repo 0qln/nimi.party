@@ -298,9 +298,9 @@
       <h2 class={["text-4xl", "text-center", "pacifico-regular"]}>
         Content Timeline
       </h2>
-      <BlossomBorder clazz={["rounded-4xl", "shadow-xl"]}>
-        <TwigBorder clazz={["rounded-4xl", "shadow-xl"]}>
-          <HorizontalScroll clazz={["bg-dots"]}>
+      <BlossomBorder clazz={["mt-3", "mb-2"]}>
+        <TwigBorder>
+          <HorizontalScroll clazz={["rounded-4xl", "shadow-xl", "bg-dots"]}>
             <Timeline data={timelineNodes} orientation="horizontal" />
           </HorizontalScroll>
         </TwigBorder>

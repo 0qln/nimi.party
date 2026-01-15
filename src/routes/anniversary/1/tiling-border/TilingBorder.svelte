@@ -185,14 +185,14 @@
 </script>
 
 <div
-  class={["tiling-border", "wrap-content"]}
+  class={["tiling-border", "wrap-content", ...clazz]}
   style="--size: {size}px"
   bind:this={containerRef}
   bind:clientWidth={containerWidth}
   bind:clientHeight={containerHeight}
 >
   <div class="tiling-content wrap-content">
-    <div class={["content", "wrap-content", ...clazz]}>
+    <div class={["content", "wrap-content"]}>
       <slot />
     </div>
     <div class="tiles-group" bind:this={tilesRef}></div>

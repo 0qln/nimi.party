@@ -3,6 +3,8 @@
 <script lang="ts">
   import blossom from "$lib/assets/frame/cherry-blossom.png";
   import TilingBorder from "./TilingBorder.svelte";
+
+  let props = $props();
 </script>
 
 <TilingBorder
@@ -11,6 +13,7 @@
   uRandom={{ lo: -20, hi: 20 }}
   vRandom={{ lo: -20, hi: 0 }}
   spritePath={blossom}
+  {...props}
 >
   <slot />
 </TilingBorder>
