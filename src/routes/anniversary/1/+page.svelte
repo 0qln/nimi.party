@@ -287,6 +287,10 @@
   import tape from "$lib/assets/frame/paper-tape.png";
 </script>
 
+<svelte:head>
+  <title>Nimi 1st Anniversary</title>
+</svelte:head>
+
 <main class={["bg-tartan"]}>
   <div
     class={["max-w-screen", "flex", "flex-col", "space-y-1", "mt-1", "mx-auto"]}
