@@ -6,6 +6,7 @@
     --accent-color: #A8BF68;
     --text-color-h1: #254031;
     --text-color-h2: color-mix(in srgb, var(--text-color-h1) 70%, var(--accent-color));
+    --text-color-p: color-mix(in srgb, var(--text-color-h1) 90%, var(--accent-color));
     --text-color-bright: ivory;
     --text-color-bright-alt: color-mix(in srgb, var(--text-color-bright) 70%, var(--accent-color));
 }

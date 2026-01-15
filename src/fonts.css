@@ -1,14 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Delius&display=swap');
 
-.pacifico-regular {
-  font-family: "Pacifico", cursive;
-  font-weight: 400;
-  font-style: normal;
+h1, h2, .pacifico-regular {
+  font-family: "Pacifico";
 }
 
 p, .delius-regular {
-  font-family: "Delius", cursive;
-  font-weight: 400;
-  font-style: normal;
+  font-family: "Delius";
 }
