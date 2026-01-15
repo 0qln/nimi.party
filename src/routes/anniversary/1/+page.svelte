@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Component } from "svelte";
   import CustomCardNode from "./content-list/templates/CustomCardNode.svelte";
-  import TimelineNodeComponent from "./content-list/templates/TimelineNode.svelte";
   import {
     TimelineEvent,
     TimelineSkip,
@@ -12,6 +11,7 @@
   import Timeline from "./content-list/Timeline.svelte";
   import HorizontalScroll from "./content-list/HorizontalScroll.svelte";
   import TwigBorder from "./tiling-border/TwigBorder.svelte";
+  import BlossomBorder from "./tiling-border/BlossomBorder.svelte";
   const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*");
 
   async function tsEventNode(
@@ -298,11 +298,13 @@
       <h2 class={["text-4xl", "text-center", "pacifico-regular"]}>
         Content Timeline
       </h2>
-      <TwigBorder clazz={["rounded-4xl", "shadow-xl"]}>
-        <HorizontalScroll clazz={["bg-dots"]}>
-          <Timeline data={timelineNodes} orientation="horizontal" />
-        </HorizontalScroll>
-      </TwigBorder>
+      <BlossomBorder clazz={["rounded-4xl", "shadow-xl"]}>
+        <TwigBorder clazz={["rounded-4xl", "shadow-xl"]}>
+          <HorizontalScroll clazz={["bg-dots"]}>
+            <Timeline data={timelineNodes} orientation="horizontal" />
+          </HorizontalScroll>
+        </TwigBorder>
+      </BlossomBorder>
     </div>
 
     <hr />
