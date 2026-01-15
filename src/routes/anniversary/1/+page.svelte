@@ -283,20 +283,87 @@
       "https://youtu.be/Q5BGyVWWl_4",
     ),
   ];
+
+  import tape from "$lib/assets/frame/paper-tape.png";
 </script>
 
 <main class={["bg-tartan"]}>
-  <div class={["max-w-screen", "mx-auto", "px-4"]}>
-    <h1 class={["text-8xl", "underline", "text-center", "pacifico-regular"]}>
-      Happy Nimiversary!
-    </h1>
-    <i class={["pacifico-regular"]}> work in progress!! :3 </i>
+  <div
+    class={["max-w-screen", "flex", "flex-col", "space-y-1", "mt-1", "mx-auto"]}
+  >
+    <h1 class={["text-8xl", "underline", "text-center"]}>Happy Nimiversary!</h1>
 
     <hr />
 
-    <div class={["flex", "flex-col", "items-center", "justify-center"]}>
-      <h2 class={["text-4xl", "text-center", "pacifico-regular"]}>
-        Content Timeline
+    <div
+      style:--bg-lines-spacing={"1.8em"}
+      class={[
+        "max-w-5xl",
+        "rounded-4xl",
+        "mx-auto",
+        "bg-lines",
+        "flex",
+        "relative",
+        "flex-col",
+        "space-y-1",
+        "p-1",
+        "shadow-xl",
+      ]}
+    >
+      <img
+        src={tape}
+        alt=""
+        class={[
+          "absolute",
+          "-left-1",
+          "-top-1",
+          "h-2.5",
+          "w-2.5",
+          "pt-0.5",
+          "pl-0.5",
+        ]}
+      />
+      <img
+        src={tape}
+        alt=""
+        class={[
+          "absolute",
+          "-right-1",
+          "-top-1",
+          "h-2.5",
+          "w-2.5",
+          "pt-0.5",
+          "pl-0.5",
+          "-scale-x-100",
+          "-rotate-6",
+        ]}
+      />
+      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+        From many Naplings across North America and around the world, we wish
+        Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
+      </p>
+
+      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+        This fan website was created by a very small team along with Napling
+        Project. The website may not be 100% perfect but we hope Nimi and
+        Naplings enjoy this little project.
+      </p>
+    </div>
+
+    <hr class={["my-1"]} />
+
+    <div
+      class={[
+        "flex",
+        "flex-col",
+        "items-center",
+        "justify-center",
+        "overflow-hidden",
+        "px-3",
+      ]}
+    >
+      <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
+        Nimi content timeline
       </h2>
       <BlossomBorder clazz={["mt-3", "mb-2"]}>
         <TwigBorder>
@@ -330,6 +397,10 @@
 
   :global(h2) {
     color: var(--text-color-h2);
+  }
+
+  p {
+    color: var(--text-color-p);
   }
 
   :global(:root) {
