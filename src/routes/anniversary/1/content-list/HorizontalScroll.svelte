@@ -1,4 +1,4 @@
-<svelte:options customElement="time-line" />
+<svelte:options customElement="horizontal-scroll" />
 
 <script lang="ts">
   interface Props {
