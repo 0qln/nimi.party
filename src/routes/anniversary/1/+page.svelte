@@ -4,7 +4,7 @@
   import {
     TimelineEvent,
     TimelineSkip,
-    type TimelineData,
+    type TimelineDatum,
     type TimelineNodePosition,
   } from "./content-list/types";
   import PlushyGallery from "./plushie-gallery/PlushyGallery.svelte";
@@ -12,7 +12,15 @@
   import HorizontalScroll from "./content-list/HorizontalScroll.svelte";
   import TwigBorder from "./tiling-border/TwigBorder.svelte";
   import BlossomBorder from "./tiling-border/BlossomBorder.svelte";
-  const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*");
+
+  // We use a maxium width of 350 pixels for each event note in the timeline.
+  // Thus we don't need the images to be any bigger.
+  const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*", {
+    query: {
+      enhanced: true,
+      w: "1280;640;400",
+    },
+  });
 
   async function tsEventNode(
     date: string,
@@ -20,34 +28,31 @@
     content: string,
     position: TimelineNodePosition,
     externalLink: string | undefined = undefined,
-    image: string | undefined = "thumbnail.jpg",
+    imageName: string | undefined = "thumbnail.jpg",
     id: string = date,
   ): Promise<TimelineEvent> {
-    let imageUrl;
-    if (image) {
-      const thumbnailPath = `/src/lib/assets/content-list/${date}/${image}`;
+    let image;
+    if (imageName) {
+      const thumbnailPath = `/src/lib/assets/content-list/${date}/${imageName}`;
       const thumbnailModule = thumbnailModules[thumbnailPath];
-
       if (thumbnailModule) {
         const module: any = await thumbnailModule();
-        imageUrl = module.default;
+        image = module?.default;
       }
     }
+    console.log(image);
 
     const dateObj = new Date(date);
 
     return new TimelineEvent({
       id: id,
       date: dateObj,
-      component: CustomCardNode as Component<{}, {}, "">,
-      componentCtor: CustomCardNode.element,
-      componentTag: "custom-card-node",
+      component: CustomCardNode,
       props: {
         title,
         subtitle: dateObj.toLocaleDateString(),
         content,
-        tags: [],
-        imageUrl: imageUrl,
+        imageUrl: image,
         externalLink,
         width: "350px",
       },
@@ -56,7 +61,11 @@
     });
   }
 
-  const timelineNodes: TimelineData = [
+  async function tsSkipNode(): Promise<TimelineSkip> {
+    return new TimelineSkip();
+  }
+
+  const timelineNodes: TimelineDatum[] = [
     await tsEventNode(
       "2025-09-01",
       "【Hollow Knight】 The one where Nimi beats the game for real",
@@ -85,7 +94,7 @@
       "below",
       "https://youtu.be/BlAkThwMZY0",
     ),
-    new TimelineSkip(),
+    await tsSkipNode(),
     await tsEventNode(
       "2025-09-12",
       "【KU100 ASMR】 ✂️ Spider Girl Sizes You Up 🕸️",
@@ -214,7 +223,7 @@
       "below",
       "https://youtu.be/-9ofHHGZHWU",
     ),
-    new TimelineSkip(),
+    await tsSkipNode(),
     await tsEventNode(
       "2025-10-08",
       "【Unfair Flips】 Gambling with a coin that can only flip tails",
@@ -431,7 +440,7 @@
   }
 
   :global(:root:has(main.bg-dots), .bg-dots) {
-    background-color: var(--bg-color-alt);
+    background-color: var(--bg-color);
     opacity: 1;
     background-image: radial-gradient(
       var(--bg-color-alt) var(--bg-dots-size),

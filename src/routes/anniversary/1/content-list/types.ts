@@ -10,14 +10,36 @@ export class TimelineSkip {
     type = TimelineNodeType.Skip;
 }
 
+export interface TimelineEventProps {
+    title?: string;
+    subtitle?: string;
+    content?: string;
+    imageUrl?: string;
+    externalLink?: string;
+    width?: string;
+    contentWidth?: string;
+    titleWidth?: string;
+    height?: string;
+    direction?: "down" | "right" | "left" | "up";
+    onHeaderResize?: (e: CustomEvent) => void;
+  }
+
+export interface TimelineEventExports {
+    getNodeRect: () => DOMRect|undefined
+}
+
+export type TimelineEventComponent = Component<
+    TimelineEventProps,
+    TimelineEventExports,
+    ""
+>;
+
 export class TimelineEvent {
     type = TimelineNodeType.Event;
 
     date?: Date;
-    component?: Component;
-    componentCtor?: CustomElementConstructor;
-    componentTag?: string;
-    props?: Record<string, any>;
+    component?: TimelineEventComponent;
+    props?: TimelineEventProps;
     id?: string;
     position?: TimelineNodePosition;
     expansion?: TimelineNodeExpansion;
@@ -27,6 +49,12 @@ export class TimelineEvent {
   constructor(data: Partial<TimelineEvent>) {
     Object.assign(this, data);
   }
+
+    // todo: clean up this mess
+    ref?: any;
+    getNodeRect(): DOMRect|undefined {
+      return this.ref?.getNodeRect();
+    }
 }
 
 export type TimelineOrientation = "horizontal" | "vertical";
