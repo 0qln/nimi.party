@@ -1,10 +1,10 @@
 <svelte:options customElement="twig-border" />
 
 <script lang="ts">
-  import twig from "$lib/assets/frame/eucalyptus-branch.png";
   import TilingBorder from "./TilingBorder.svelte";
+  import TwigSprite from "./TwigSprite.svelte";
 </script>
 
-<TilingBorder spritePath={twig}>
+<TilingBorder size={{ width: 150, height: 150 }} sprite={TwigSprite}>
   <slot />
 </TilingBorder>
