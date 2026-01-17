@@ -22,6 +22,18 @@
     },
   });
 
+  async function fetchThumbnail(
+    date: string,
+    imageName: string,
+  ): Promise<string | undefined> {
+    const thumbnailPath = `/src/lib/assets/content-list/${date}/${imageName}`;
+    const thumbnailModule = thumbnailModules[thumbnailPath];
+    if (thumbnailModule) {
+      const module: any = await thumbnailModule();
+      return module?.default;
+    }
+  }
+
   async function tsEventNode(
     date: string,
     title: string,
@@ -33,14 +45,8 @@
   ): Promise<TimelineEvent> {
     let image;
     if (imageName) {
-      const thumbnailPath = `/src/lib/assets/content-list/${date}/${imageName}`;
-      const thumbnailModule = thumbnailModules[thumbnailPath];
-      if (thumbnailModule) {
-        const module: any = await thumbnailModule();
-        image = module?.default;
-      }
+      image = fetchThumbnail(date, imageName);
     }
-    console.log(image);
 
     const dateObj = new Date(date);
 

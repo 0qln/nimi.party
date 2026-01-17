@@ -8,7 +8,7 @@
     title = "",
     subtitle = "",
     content = "",
-    imageUrl = "",
+    imageUrl: image = "",
     externalLink = undefined,
     width = "",
     contentWidth = "",
@@ -41,10 +41,18 @@
 </script>
 
 {#snippet tImage()}
-  {#if imageUrl}
+  {#if typeof image === "string"}
     <div class="card-media">
-      <enhanced:img src={imageUrl} sizes="400px" alt={title} loading="lazy" />
+      <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
     </div>
+  {:else if image instanceof Promise}
+    {#await image then image}
+      {#if image}
+        <div class="card-media">
+          <enhanced:img src={image} sizes="400px" alt={title} />
+        </div>
+      {/if}
+    {/await}
   {/if}
 {/snippet}
 

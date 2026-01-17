@@ -14,7 +14,7 @@ export interface TimelineEventProps {
     title?: string;
     subtitle?: string;
     content?: string;
-    imageUrl?: string;
+    imageUrl?: string|Promise<string|undefined>;
     externalLink?: string;
     width?: string;
     contentWidth?: string;
