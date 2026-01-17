@@ -5,7 +5,7 @@
 </script>
 
 <enhanced:img
-  src="$lib/assets/frame/eucalyptus-branch.png"
+  src="$lib/assets/frame/eucalyptus-branch.png?format=avif"
   sizes="150px"
   alt=""
   style:pointer-events="none"
