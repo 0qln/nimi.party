@@ -4,7 +4,7 @@
   import {
     TimelineEvent,
     TimelineSkip,
-    type TimelineData,
+    type TimelineDatum,
     type TimelineNodePosition,
   } from "./content-list/types";
   import PlushyGallery from "./plushie-gallery/PlushyGallery.svelte";
@@ -12,26 +12,40 @@
   import HorizontalScroll from "./content-list/HorizontalScroll.svelte";
   import TwigBorder from "./tiling-border/TwigBorder.svelte";
   import BlossomBorder from "./tiling-border/BlossomBorder.svelte";
-  const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*");
 
-  async function tsEventNode(
+  // We use a maxium width of 350 pixels for each event note in the timeline.
+  // Thus we don't need the images to be any bigger.
+  const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*", {
+    query: {
+      enhanced: true,
+      w: "1280;640;400",
+    },
+  });
+
+  async function fetchThumbnail(
+    date: string,
+    imageName: string,
+  ): Promise<string | undefined> {
+    const thumbnailPath = `/src/lib/assets/content-list/${date}/${imageName}`;
+    const thumbnailModule = thumbnailModules[thumbnailPath];
+    if (thumbnailModule) {
+      const module: any = await thumbnailModule();
+      return module?.default;
+    }
+  }
+
+  function tsEventNode(
     date: string,
     title: string,
     content: string,
     position: TimelineNodePosition,
     externalLink: string | undefined = undefined,
-    image: string | undefined = "thumbnail.jpg",
+    imageName: string | undefined = "thumbnail.jpg",
     id: string = date,
-  ): Promise<TimelineEvent> {
-    let imageUrl;
-    if (image) {
-      const thumbnailPath = `/src/lib/assets/content-list/${date}/${image}`;
-      const thumbnailModule = thumbnailModules[thumbnailPath];
-
-      if (thumbnailModule) {
-        const module: any = await thumbnailModule();
-        imageUrl = module.default;
-      }
+  ): TimelineEvent {
+    let image;
+    if (imageName) {
+      image = fetchThumbnail(date, imageName);
     }
 
     const dateObj = new Date(date);
@@ -39,15 +53,12 @@
     return new TimelineEvent({
       id: id,
       date: dateObj,
-      component: CustomCardNode as Component<{}, {}, "">,
-      componentCtor: CustomCardNode.element,
-      componentTag: "custom-card-node",
+      component: CustomCardNode,
       props: {
         title,
         subtitle: dateObj.toLocaleDateString(),
         content,
-        tags: [],
-        imageUrl: imageUrl,
+        imageUrl: image,
         externalLink,
         width: "350px",
       },
@@ -56,8 +67,12 @@
     });
   }
 
-  const timelineNodes: TimelineData = [
-    await tsEventNode(
+  function tsSkipNode(): TimelineSkip {
+    return new TimelineSkip();
+  }
+
+  const timelineNodes: TimelineDatum[] = [
+    tsEventNode(
       "2025-09-01",
       "【Hollow Knight】 The one where Nimi beats the game for real",
       `
@@ -67,7 +82,7 @@
       "below",
       "https://youtu.be/rq7oYfJAMRw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-04",
       "【SKYBLOCK MINECRAFT】 In my happy space",
       `
@@ -76,7 +91,7 @@
       "above",
       "https://youtu.be/eQT4U2_rwWc",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-05",
       "Learning to be a mother from questionable Wii games",
       `
@@ -85,8 +100,8 @@
       "below",
       "https://youtu.be/BlAkThwMZY0",
     ),
-    new TimelineSkip(),
-    await tsEventNode(
+    tsSkipNode(),
+    tsEventNode(
       "2025-09-12",
       "【KU100 ASMR】 ✂️ Spider Girl Sizes You Up 🕸️",
       `
@@ -95,7 +110,7 @@
       "above",
       "https://youtu.be/d4Byvoh_Z0s",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-13",
       "Nimi finds the go live button",
       `
@@ -105,7 +120,7 @@
       "below",
       "https://youtu.be/fldbRmQ91Pk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-14",
       "【The Quarry】 Nimi controls the fate of nine teenagers (they are doomed)",
       `
@@ -115,7 +130,7 @@
       "above",
       "https://youtu.be/dZwZ2LMItvw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-17",
       " 【The Quarry】 I have a bad feeling about this | #2",
       `
@@ -124,7 +139,7 @@
       "below",
       "https://youtu.be/FFPqDKcsLfk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-18",
       "【Half Sword】 Medieval Combat Simulator but make it QWOP",
       `
@@ -133,7 +148,7 @@
       "above",
       "https://youtu.be/HMry7BzvMig",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-20",
       "【The Wolf Among Us】 Making very good decisions in this classic Telltale Game",
       `
@@ -142,7 +157,7 @@
       "below",
       "https://youtu.be/VIy7mIOW8p8",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-22",
       "【Sims 2】 Can I survive as a lone child in The Sims 2?",
       `
@@ -151,7 +166,7 @@
       "above",
       "https://youtu.be/xeVuA5AziB8",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-24",
       " 【The Wolf Among Us】 We've got ourselves a murder mystery | #2",
       `
@@ -160,7 +175,7 @@
       "below",
       "https://youtu.be/M0VtCrS9D0s",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-25",
       " 【The Wolf Among Us】 That's it, I'm sending everyone to the farm | FINALE",
       `
@@ -169,7 +184,7 @@
       "above",
       "https://youtu.be/rD_WW200Aqg",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-26",
       " 【No, I'm Not a Human】 Your Neighbors are NOT what They Seem (Full Release)",
       `
@@ -178,7 +193,7 @@
       "below",
       "https://youtu.be/8oFlHDVBYLs",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-28",
       " 【ELDEN RING: SHADOW OF THE ERDTREE】 DLC starts NOW! | #1",
       `
@@ -187,7 +202,7 @@
       "above",
       "https://youtu.be/g8fdYvx3_mw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-29",
       "【SKYBLOCK MINECRAFT】 0 days since last mob spawner incident",
       `
@@ -196,7 +211,7 @@
       "below",
       "https://youtu.be/7meuhc4aPwk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-01",
       "10012025_forest.mp4",
       `
@@ -205,7 +220,7 @@
       "above",
       "https://youtu.be/h-mlJwFKnSY",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-03",
       " 【MEGABONK】 Addictive new roguelite where you BONK",
       `
@@ -214,8 +229,8 @@
       "below",
       "https://youtu.be/-9ofHHGZHWU",
     ),
-    new TimelineSkip(),
-    await tsEventNode(
+    tsSkipNode(),
+    tsEventNode(
       "2025-10-08",
       "【Unfair Flips】 Gambling with a coin that can only flip tails",
       `
@@ -224,7 +239,7 @@
       "above",
       "https://youtu.be/MW3ZM5yyBcg",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-09",
       '【Road To Empress】 Ruling the palace one "good" decision at a time',
       `
@@ -235,7 +250,7 @@
       "thumbnail-0.jpg",
       "2025-10-09_0",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-09",
       "youtube please",
       `
@@ -246,7 +261,7 @@
       "thumbnail-1.jpg",
       "2025-10-09_1",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-10",
       "【BIRTHDAY STREAM】 Nimi's Maze of Horrors #BirthdayBaku2025",
       `
@@ -255,7 +270,7 @@
       "below",
       "https://youtu.be/2-heo8MsGoY",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-12",
       "【CARIMARA】 Beautiful & Creepy Horror Game Where You have no voice",
       `
@@ -264,7 +279,7 @@
       "above",
       "https://youtu.be/G03zV4PlHxs",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-13",
       "【MINECRAFT SKYBLOCK】 My island is so cottagecore cozycore prisoncore",
       `
@@ -273,7 +288,7 @@
       "below",
       "https://youtu.be/FhdqJ-HYSP0",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-15",
       "Nimi attempts to draw Pokémon from memory",
       `
@@ -283,8 +298,6 @@
       "https://youtu.be/Q5BGyVWWl_4",
     ),
   ];
-
-  import tape from "$lib/assets/frame/paper-tape.png";
 </script>
 
 <svelte:head>
@@ -293,7 +306,15 @@
 
 <main class={["bg-tartan"]}>
   <div
-    class={["max-w-screen", "flex", "flex-col", "space-y-1", "mt-1", "mx-auto"]}
+    class={[
+      "max-w-screen",
+      "items-center",
+      "flex",
+      "flex-col",
+      "space-y-1",
+      "mt-1",
+      "mx-auto",
+    ]}
   >
     <h1 class={["text-8xl", "underline", "text-center"]}>Happy Nimiversary!</h1>
 
@@ -302,56 +323,40 @@
     <div
       style:--bg-lines-spacing={"1.8em"}
       class={[
-        "max-w-5xl",
-        "rounded-4xl",
-        "mx-auto",
-        "bg-lines",
-        "flex",
         "relative",
-        "flex-col",
-        "space-y-1",
+        "max-w-5xl",
+        "mx-2",
         "p-1",
+        "bg-lines",
         "shadow-xl",
+        "rounded-4xl",
       ]}
     >
-      <img
-        src={tape}
-        alt=""
-        class={[
-          "absolute",
-          "-left-1",
-          "-top-1",
-          "h-2.5",
-          "w-2.5",
-          "pt-0.5",
-          "pl-0.5",
-        ]}
-      />
-      <img
-        src={tape}
-        alt=""
-        class={[
-          "absolute",
-          "-right-1",
-          "-top-1",
-          "h-2.5",
-          "w-2.5",
-          "pt-0.5",
-          "pl-0.5",
-          "-scale-x-100",
-          "-rotate-6",
-        ]}
-      />
-      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-        From many Naplings across North America and around the world, we wish
-        Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
-      </p>
+      <div class={["flex", "flex-col", "space-y-1"]}>
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          From many Naplings across North America and around the world, we wish
+          Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
+        </p>
 
-      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-        This fan website was created by a very small team along with Napling
-        Project. The website may not be 100% perfect but we hope Nimi and
-        Naplings enjoy this little project.
-      </p>
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          This fan website was created by a very small team along with Napling
+          Project. The website may not be 100% perfect but we hope Nimi and
+          Naplings enjoy this little project.
+        </p>
+      </div>
+
+      {#snippet tape(classes: string[])}
+        <enhanced:img
+          src="$lib/assets/frame/paper-tape.png?w=100"
+          sizes="100px"
+          alt=""
+          class={["absolute", "h-2.5", "w-2.5", "pt-0.5", "pl-0.5", ...classes]}
+        />
+      {/snippet}
+
+      {@render tape(["-left-1", "-top-1"])}
+
+      {@render tape(["-right-1", "-top-1", "-scale-x-100", "-rotate-6"])}
     </div>
 
     <hr class={["my-1"]} />
@@ -364,6 +369,7 @@
         "justify-center",
         "overflow-hidden",
         "px-3",
+        "w-full",
       ]}
     >
       <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
@@ -431,7 +437,7 @@
   }
 
   :global(:root:has(main.bg-dots), .bg-dots) {
-    background-color: var(--bg-color-alt);
+    background-color: var(--bg-color);
     opacity: 1;
     background-image: radial-gradient(
       var(--bg-color-alt) var(--bg-dots-size),

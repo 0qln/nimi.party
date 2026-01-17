@@ -1,49 +1,58 @@
 <svelte:options customElement="custom-card-node" />
 
 <script lang="ts">
-  interface Props {
-    title: string;
-    subtitle?: string;
-    content?: string;
-    imageUrl?: string;
-    externalLink?: string;
-    width?: string;
-    contentWidth?: string;
-    titleWidth?: string;
-    height?: string;
-    direction?: "down" | "right" | "left" | "up";
-  }
+  import { select } from "d3-selection";
+  import type { TimelineEventProps } from "../types";
 
   let {
     title = "",
     subtitle = "",
     content = "",
-    imageUrl = "",
+    imageUrl: image = "",
     externalLink = undefined,
     width = "",
     contentWidth = "",
     titleWidth = "",
     height = "",
     direction = "down",
-  }: Props = $props();
+    onHeaderResize: onHeaderResize = undefined,
+  }: TimelineEventProps = $props();
 
-  // Determine orientation group
   let isVertical = $derived(direction === "down" || direction === "up");
-
-  // Determine defaults based on orientation
   let cssWidth = $derived(width || (isVertical ? "400px" : "unset"));
   let cssContentWidth = $derived(
     contentWidth || (isVertical ? "unset" : "300px"),
   );
   let cssTitleWidth = $derived(titleWidth || (isVertical ? "unset" : "200px"));
   let cssHeight = $derived(height || (isVertical ? "fit-content" : "230px"));
+
+  function dispatchHeaderResize(v: any) {
+    if (!onHeaderResize) {
+      return;
+    }
+
+    onHeaderResize(new CustomEvent("headerResize", { detail: v }));
+  }
+
+  let headerRef: HTMLDivElement;
+  export function getNodeRect(): DOMRect | undefined {
+    return select(headerRef)?.node()?.getBoundingClientRect();
+  }
 </script>
 
 {#snippet tImage()}
-  {#if imageUrl}
+  {#if typeof image === "string"}
     <div class="card-media">
-      <img src={imageUrl} alt={title} loading="lazy" />
+      <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
     </div>
+  {:else if image instanceof Promise}
+    {#await image then image}
+      {#if image}
+        <div class="card-media">
+          <enhanced:img src={image} sizes="400px" alt={title} />
+        </div>
+      {/if}
+    {/await}
   {/if}
 {/snippet}
 
@@ -114,7 +123,11 @@
   <div class="accent-bar"></div>
 
   <!-- HEAD SECTION -->
-  <div class="card-head">
+  <div
+    class="card-head"
+    bind:borderBoxSize={null, (v) => dispatchHeaderResize(v)}
+    bind:this={headerRef}
+  >
     {@render tImage()}
     {@render tHeader()}
   </div>
@@ -247,7 +260,7 @@
     width: 100%;
   }
   .is-vertical .card-media {
-    flex-shrink: 1.5;
+    flex-shrink: 1;
     /* Optional: Limit image width in vertical mode if needed, usually managed by flex */
   }
   .is-vertical .card-header-wrapper {

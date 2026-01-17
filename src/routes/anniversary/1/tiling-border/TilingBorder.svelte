@@ -1,13 +1,26 @@
 <svelte:options customElement="tiling-border" />
 
 <script lang="ts">
-  import * as d3 from "d3";
   import { hashCode, mulberry32 } from "../utils";
   import type { RngRange } from "./types";
+  import type { Component } from "svelte";
+
+  interface SpriteProps {
+    style: {
+      position: string;
+      height: string;
+      width: string;
+      transform: string;
+      left: string;
+      right: string;
+      top: string;
+      bottom: string;
+    };
+  }
 
   interface Props {
-    spritePath: string;
-    size?: number;
+    sprite: Component<SpriteProps, {}, "">;
+    size: Size;
     clazz?: string[];
     uRandom?: RngRange;
     vRandom?: RngRange;
@@ -16,8 +29,8 @@
   }
 
   let {
-    spritePath,
-    size = 150,
+    sprite: Sprite,
+    size,
     clazz = [],
     uRandom = { lo: -5, hi: 5 },
     vRandom = { lo: -20, hi: 10 },
@@ -27,161 +40,104 @@
       v: 0.05,
     },
   }: Props = $props();
-  let sizeVal = (() => size)();
 
   let tilesRef: HTMLDivElement;
   let containerRef: HTMLDivElement;
+
+  let containerWidth = $state(0);
+  let containerHeight = $state(0);
+
+  let dims: Size = $derived({ width: containerWidth, height: containerHeight });
 
   interface Size {
     width: number;
     height: number;
   }
-  let containerWidth = $state(0);
-  let containerHeight = $state(0);
-  let dims: Size = $derived({ width: containerWidth, height: containerHeight });
 
-  interface TileData {
-    size: Size;
+  type Side = "left" | "right" | "top" | "bottom";
+
+  interface Datum {
+    x: string;
+    y: string;
+    w: number;
+    h: number;
+    isOuter: boolean;
+    isHighside: boolean;
+    angle: number;
+    mirror: "x" | "y" | false;
   }
-  let tileInfo: TileData = {
-    size: { width: sizeVal, height: sizeVal },
-  };
 
-  $effect(() => {
-    const dimensions = $state.snapshot(dims);
-    requestAnimationFrame(() => draw(dimensions));
-  });
+  type Data = Datum[];
 
-  let left;
-  let right;
-  let bottom;
-  let top;
+  const px = (x: number) => `${x}px`;
 
-  function draw(dims: Size): void {
-    type Side = "left" | "right" | "top" | "bottom";
-    interface Datum {
-      x: string;
-      y: string;
-      xInit: string;
-      yInit: string;
-      w: number;
-      h: number;
-      isOuter: boolean;
-      isHighside: boolean;
-      angle: number;
-      mirror: "x" | "y" | false;
-    }
+  function genData(side: Side, containerW: number, containerH: number): Data {
+    const isHighside = side == "right" || side == "bottom";
+    const isHorizontal = side == "left" || side == "right";
+    const isVertical = !isHorizontal;
+    const sideLength = isHorizontal ? containerH : containerW;
+    const tileLength = Math.max(size.height, size.width);
 
-    type Data = Datum[];
-
-    const px = (x: any) => `${x}px`;
-
-    const genData = (side: Side): Data => {
-      const isHighside = side == "right" || side == "bottom";
-      const isHorizontal = side == "left" || side == "right";
-      const isVertical = !isHorizontal;
-      const sideLength = isHorizontal ? dims.height : dims.width;
-      const tileLength = Math.max(tileInfo.size.height, tileInfo.size.width);
-
-      const size = {
-        u: isHorizontal ? tileInfo.size.height : tileInfo.size.width,
-        v: isHorizontal ? tileInfo.size.width : tileInfo.size.height,
-      };
-
-      const sprite = {
-        adjustments: {
-          v: size.v / 7,
-          u: -10,
-        },
-        flip: true,
-      };
-
-      const numTiles = Math.floor(sideLength / tileLength) * density.u;
-
-      const rng = mulberry32(hashCode(side));
-      return Array.from({ length: numTiles }, (_, i: number) => {
-        const seed = rng({ lo: 67, hi: 420 });
-        const localRng = mulberry32(seed);
-
-        const nthOuter = Math.max(2, Math.ceil(density.u * 0.66));
-        const isOuter = i % nthOuter != 0;
-
-        const u =
-          (i * size.u) / density.u + sprite.adjustments.u + localRng(uRandom);
-
-        const v =
-          -(size.v / 2) +
-          density.v * size.v * (isOuter ? 1 : -1) +
-          sprite.adjustments.v * (isOuter ? -1 : 1) +
-          localRng(vRandom);
-
-        const uInit = u - size.u;
-        const vInit = v;
-
-        const angle =
-          (isOuter ? 180 : 0) +
-          (isHighside ? 180 : 0) +
-          (isVertical ? 180 : 0) +
-          (isHorizontal ? 90 : 0) +
-          localRng(angleRandom) * (isOuter ? 5.1 : 0.8);
-
-        return {
-          isOuter,
-          isHighside,
-          x: px(isHorizontal ? v : u),
-          y: px(isHorizontal ? u : v),
-          xInit: px(isHorizontal ? vInit : vInit),
-          yInit: px(isHorizontal ? uInit : vInit),
-          w: tileLength,
-          h: tileLength,
-          angle,
-          mirror: sprite.flip
-            ? !isOuter
-              ? "x"
-              : false
-            : isOuter
-              ? "x"
-              : false,
-        };
-      });
+    const tileSize = {
+      u: isHorizontal ? size.height : size.width,
+      v: isHorizontal ? size.width : size.height,
     };
 
-    function update(
-      root: d3.Selection<HTMLDivElement, unknown, null, undefined>,
-      side: Side,
-    ) {
-      return root
-        .selectAll(`img.${side}`)
-        .data(genData(side))
-        .join("img")
-        .attr("src", spritePath)
-        .classed(`tile ${side}`, true)
-        .call((s) =>
-          s
-            .style("right", (d) => (d.isHighside ? d.x : "unset"))
-            .style("bottom", (d) => (d.isHighside ? d.y : "unset"))
-            .style("left", (d) => (!d.isHighside ? d.x : "unset"))
-            .style("top", (d) => (!d.isHighside ? d.y : "unset")),
-        )
-        .style("width", (d) => px(d.w) || "unset")
-        .style("height", (d) => px(d.h) || "unset")
-        .style("position", "absolute")
-        .style(
-          "transform",
-          (d) =>
-            `rotate(${d.angle}deg) ${d.mirror == "x" ? "scaleX(-1)" : d.mirror == "y" ? "scaleY(-1)" : ""}`,
-        )
-        .style("pointer-events", "none")
-        .style("object-fit", "contain");
-    }
+    const sprite = {
+      adjustments: {
+        v: tileSize.v / 7,
+        u: -10,
+      },
+      flip: true,
+    };
 
-    const root = d3.select(tilesRef);
+    const numTiles = Math.floor(sideLength / tileLength) * density.u;
 
-    left = update(root, "left");
-    right = update(root, "right");
-    bottom = update(root, "bottom");
-    top = update(root, "top");
+    const rng = mulberry32(hashCode(side));
+    return Array.from({ length: numTiles }, (_, i: number) => {
+      const seed = rng({ lo: 67, hi: 420 });
+      const localRng = mulberry32(seed);
+
+      const nthOuter = Math.max(2, Math.ceil(density.u * 0.66));
+      const isOuter = i % nthOuter != 0;
+
+      const u =
+        (i * tileSize.u) / density.u + sprite.adjustments.u + localRng(uRandom);
+
+      const v =
+        -(tileSize.v / 2) +
+        density.v * tileSize.v * (isOuter ? 1 : -1) +
+        sprite.adjustments.v * (isOuter ? -1 : 1) +
+        localRng(vRandom);
+
+      const angle =
+        (isOuter ? 180 : 0) +
+        (isHighside ? 180 : 0) +
+        (isVertical ? 180 : 0) +
+        (isHorizontal ? 90 : 0) +
+        localRng(angleRandom) * (isOuter ? 5.1 : 0.8);
+
+      return {
+        isOuter,
+        isHighside,
+        x: px(isHorizontal ? v : u),
+        y: px(isHorizontal ? u : v),
+        w: tileLength,
+        h: tileLength,
+        angle,
+        mirror: sprite.flip ? (!isOuter ? "x" : false) : isOuter ? "x" : false,
+      };
+    });
   }
+
+  let tiles = $derived.by(() => {
+    return [
+      ...genData("left", dims.width, dims.height),
+      ...genData("right", dims.width, dims.height),
+      ...genData("top", dims.width, dims.height),
+      ...genData("bottom", dims.width, dims.height),
+    ];
+  });
 </script>
 
 <div
@@ -195,7 +151,23 @@
     <div class={["content", "wrap-content"]}>
       <slot />
     </div>
-    <div class="tiles-group" bind:this={tilesRef}></div>
+
+    <div class="tiles-group" bind:this={tilesRef}>
+      {#each tiles as tile}
+        <Sprite
+          style={{
+            position: "absolute",
+            height: px(tile.h) || "unset",
+            width: px(tile.w) || "unset",
+            transform: `rotate(${tile.angle}deg) ${tile.mirror == "x" ? "scaleX(-1)" : tile.mirror == "y" ? "scaleY(-1)" : ""}`,
+            left: !tile.isHighside ? tile.x : "unset",
+            right: tile.isHighside ? tile.x : "unset",
+            top: !tile.isHighside ? tile.y : "unset",
+            bottom: tile.isHighside ? tile.y : "unset",
+          }}
+        />
+      {/each}
+    </div>
   </div>
 </div>
 

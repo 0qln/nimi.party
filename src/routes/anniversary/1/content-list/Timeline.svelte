@@ -30,7 +30,6 @@
   let containerHeight = $state(0);
 
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
-  //let leafsSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
 
   interface Props {
@@ -226,7 +225,7 @@
       return skipWidth(prev) + skipWidth(curr);
     }
 
-    return eventWidth(prev, curr);
+    return eventWidth(prev as TimelineEvent, curr as TimelineEvent);
   }
 
   function firstDatumX(): number {
@@ -259,7 +258,7 @@
     return (
       padding * 2 +
       datumXPosition(data.length - 1) +
-      branchWidth(data[data.length - 1])
+      branchWidth(data[data.length - 1] as TimelineEvent)
     );
   }
 
@@ -549,7 +548,7 @@
     // 1. Calculate Arrangement
     eventsSel.each(function (d, i) {
       const { node, index } = d;
-      const nodeRect = this.getBoundingClientRect();
+      const nodeRect = node.getNodeRect()!;
       const position = node.position || defaultPos(i);
 
       nodeRect.x = getNodeX(index, branchWidth(node), nodeRect);
@@ -651,7 +650,18 @@
         style="position: absolute; left: 0px; top: 0px;"
         aria-label={`Timeline node ${i + 1}`}
       >
-        <node.component {...node.props} />
+        <node.component
+          bind:this={node.ref}
+          onHeaderResize={(_v: any) => {
+            requestAnimationFrame(() => {
+              drawTimeline({
+                width: containerWidth,
+                height: containerHeight,
+              });
+            });
+          }}
+          {...node.props}
+        />
       </div>
     {/each}
   </div>
