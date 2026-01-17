@@ -12,17 +12,11 @@
 </script>
 
 <div
-  class={[
-    "flex",
-    "flex-row",
-    "justify-center",
-    "flex-wrap",
-    "space-x-1",
-    "space-y-1",
-  ]}
+  class="w-full space-y-1"
+  style="column-count: {cols}; column-gap: var(--spacing);"
 >
   {#each data as photo}
-    <div class="w-1/4">
+    <div class="break-inside-avoid w-full">
       <photo.component {...photo.props} />
     </div>
   {/each}
