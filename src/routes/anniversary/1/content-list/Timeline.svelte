@@ -30,7 +30,6 @@
   let containerHeight = $state(0);
 
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
-  //let leafsSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
 
   interface Props {

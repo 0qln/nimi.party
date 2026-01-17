@@ -298,8 +298,6 @@
       "https://youtu.be/Q5BGyVWWl_4",
     ),
   ];
-
-  import tape from "$lib/assets/frame/paper-tape.png";
 </script>
 
 <svelte:head>
@@ -308,7 +306,15 @@
 
 <main class={["bg-tartan"]}>
   <div
-    class={["max-w-screen", "flex", "flex-col", "space-y-1", "mt-1", "mx-auto"]}
+    class={[
+      "max-w-screen",
+      "items-center",
+      "flex",
+      "flex-col",
+      "space-y-1",
+      "mt-1",
+      "mx-auto",
+    ]}
   >
     <h1 class={["text-8xl", "underline", "text-center"]}>Happy Nimiversary!</h1>
 
@@ -317,56 +323,40 @@
     <div
       style:--bg-lines-spacing={"1.8em"}
       class={[
-        "max-w-5xl",
-        "rounded-4xl",
-        "mx-auto",
-        "bg-lines",
-        "flex",
         "relative",
-        "flex-col",
-        "space-y-1",
+        "max-w-5xl",
+        "mx-2",
         "p-1",
+        "bg-lines",
         "shadow-xl",
+        "rounded-4xl",
       ]}
     >
-      <img
-        src={tape}
-        alt=""
-        class={[
-          "absolute",
-          "-left-1",
-          "-top-1",
-          "h-2.5",
-          "w-2.5",
-          "pt-0.5",
-          "pl-0.5",
-        ]}
-      />
-      <img
-        src={tape}
-        alt=""
-        class={[
-          "absolute",
-          "-right-1",
-          "-top-1",
-          "h-2.5",
-          "w-2.5",
-          "pt-0.5",
-          "pl-0.5",
-          "-scale-x-100",
-          "-rotate-6",
-        ]}
-      />
-      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-        From many Naplings across North America and around the world, we wish
-        Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
-      </p>
+      <div class={["flex", "flex-col", "space-y-1"]}>
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          From many Naplings across North America and around the world, we wish
+          Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
+        </p>
 
-      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-        This fan website was created by a very small team along with Napling
-        Project. The website may not be 100% perfect but we hope Nimi and
-        Naplings enjoy this little project.
-      </p>
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          This fan website was created by a very small team along with Napling
+          Project. The website may not be 100% perfect but we hope Nimi and
+          Naplings enjoy this little project.
+        </p>
+      </div>
+
+      {#snippet tape(classes: string[])}
+        <enhanced:img
+          src="$lib/assets/frame/paper-tape.png?w=100"
+          sizes="100px"
+          alt=""
+          class={["absolute", "h-2.5", "w-2.5", "pt-0.5", "pl-0.5", ...classes]}
+        />
+      {/snippet}
+
+      {@render tape(["-left-1", "-top-1"])}
+
+      {@render tape(["-right-1", "-top-1", "-scale-x-100", "-rotate-6"])}
     </div>
 
     <hr class={["my-1"]} />
@@ -379,6 +369,7 @@
         "justify-center",
         "overflow-hidden",
         "px-3",
+        "w-full",
       ]}
     >
       <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
