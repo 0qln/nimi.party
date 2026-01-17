@@ -34,7 +34,7 @@
     }
   }
 
-  async function tsEventNode(
+  function tsEventNode(
     date: string,
     title: string,
     content: string,
@@ -42,7 +42,7 @@
     externalLink: string | undefined = undefined,
     imageName: string | undefined = "thumbnail.jpg",
     id: string = date,
-  ): Promise<TimelineEvent> {
+  ): TimelineEvent {
     let image;
     if (imageName) {
       image = fetchThumbnail(date, imageName);
@@ -67,12 +67,12 @@
     });
   }
 
-  async function tsSkipNode(): Promise<TimelineSkip> {
+  function tsSkipNode(): TimelineSkip {
     return new TimelineSkip();
   }
 
   const timelineNodes: TimelineDatum[] = [
-    await tsEventNode(
+    tsEventNode(
       "2025-09-01",
       "【Hollow Knight】 The one where Nimi beats the game for real",
       `
@@ -82,7 +82,7 @@
       "below",
       "https://youtu.be/rq7oYfJAMRw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-04",
       "【SKYBLOCK MINECRAFT】 In my happy space",
       `
@@ -91,7 +91,7 @@
       "above",
       "https://youtu.be/eQT4U2_rwWc",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-05",
       "Learning to be a mother from questionable Wii games",
       `
@@ -100,8 +100,8 @@
       "below",
       "https://youtu.be/BlAkThwMZY0",
     ),
-    await tsSkipNode(),
-    await tsEventNode(
+    tsSkipNode(),
+    tsEventNode(
       "2025-09-12",
       "【KU100 ASMR】 ✂️ Spider Girl Sizes You Up 🕸️",
       `
@@ -110,7 +110,7 @@
       "above",
       "https://youtu.be/d4Byvoh_Z0s",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-13",
       "Nimi finds the go live button",
       `
@@ -120,7 +120,7 @@
       "below",
       "https://youtu.be/fldbRmQ91Pk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-14",
       "【The Quarry】 Nimi controls the fate of nine teenagers (they are doomed)",
       `
@@ -130,7 +130,7 @@
       "above",
       "https://youtu.be/dZwZ2LMItvw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-17",
       " 【The Quarry】 I have a bad feeling about this | #2",
       `
@@ -139,7 +139,7 @@
       "below",
       "https://youtu.be/FFPqDKcsLfk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-18",
       "【Half Sword】 Medieval Combat Simulator but make it QWOP",
       `
@@ -148,7 +148,7 @@
       "above",
       "https://youtu.be/HMry7BzvMig",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-20",
       "【The Wolf Among Us】 Making very good decisions in this classic Telltale Game",
       `
@@ -157,7 +157,7 @@
       "below",
       "https://youtu.be/VIy7mIOW8p8",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-22",
       "【Sims 2】 Can I survive as a lone child in The Sims 2?",
       `
@@ -166,7 +166,7 @@
       "above",
       "https://youtu.be/xeVuA5AziB8",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-24",
       " 【The Wolf Among Us】 We've got ourselves a murder mystery | #2",
       `
@@ -175,7 +175,7 @@
       "below",
       "https://youtu.be/M0VtCrS9D0s",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-25",
       " 【The Wolf Among Us】 That's it, I'm sending everyone to the farm | FINALE",
       `
@@ -184,7 +184,7 @@
       "above",
       "https://youtu.be/rD_WW200Aqg",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-26",
       " 【No, I'm Not a Human】 Your Neighbors are NOT what They Seem (Full Release)",
       `
@@ -193,7 +193,7 @@
       "below",
       "https://youtu.be/8oFlHDVBYLs",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-28",
       " 【ELDEN RING: SHADOW OF THE ERDTREE】 DLC starts NOW! | #1",
       `
@@ -202,7 +202,7 @@
       "above",
       "https://youtu.be/g8fdYvx3_mw",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-09-29",
       "【SKYBLOCK MINECRAFT】 0 days since last mob spawner incident",
       `
@@ -211,7 +211,7 @@
       "below",
       "https://youtu.be/7meuhc4aPwk",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-01",
       "10012025_forest.mp4",
       `
@@ -220,7 +220,7 @@
       "above",
       "https://youtu.be/h-mlJwFKnSY",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-03",
       " 【MEGABONK】 Addictive new roguelite where you BONK",
       `
@@ -229,8 +229,8 @@
       "below",
       "https://youtu.be/-9ofHHGZHWU",
     ),
-    await tsSkipNode(),
-    await tsEventNode(
+    tsSkipNode(),
+    tsEventNode(
       "2025-10-08",
       "【Unfair Flips】 Gambling with a coin that can only flip tails",
       `
@@ -239,7 +239,7 @@
       "above",
       "https://youtu.be/MW3ZM5yyBcg",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-09",
       '【Road To Empress】 Ruling the palace one "good" decision at a time',
       `
@@ -250,7 +250,7 @@
       "thumbnail-0.jpg",
       "2025-10-09_0",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-09",
       "youtube please",
       `
@@ -261,7 +261,7 @@
       "thumbnail-1.jpg",
       "2025-10-09_1",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-10",
       "【BIRTHDAY STREAM】 Nimi's Maze of Horrors #BirthdayBaku2025",
       `
@@ -270,7 +270,7 @@
       "below",
       "https://youtu.be/2-heo8MsGoY",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-12",
       "【CARIMARA】 Beautiful & Creepy Horror Game Where You have no voice",
       `
@@ -279,7 +279,7 @@
       "above",
       "https://youtu.be/G03zV4PlHxs",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-13",
       "【MINECRAFT SKYBLOCK】 My island is so cottagecore cozycore prisoncore",
       `
@@ -288,7 +288,7 @@
       "below",
       "https://youtu.be/FhdqJ-HYSP0",
     ),
-    await tsEventNode(
+    tsEventNode(
       "2025-10-15",
       "Nimi attempts to draw Pokémon from memory",
       `
