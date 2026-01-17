@@ -36,6 +36,7 @@
           height="100"
           src={nimiBall}
           style="object-fit: contain;"
+          loading="eager"
         />
       </div>
     {/if}
