@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Component } from "svelte";
   import CustomCardNode from "./content-list/templates/CustomCardNode.svelte";
   import {
     TimelineEvent,
@@ -12,6 +11,8 @@
   import HorizontalScroll from "./content-list/HorizontalScroll.svelte";
   import TwigBorder from "./tiling-border/TwigBorder.svelte";
   import BlossomBorder from "./tiling-border/BlossomBorder.svelte";
+  import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
+  import { PlushyPhotoDatum } from "./plushie-gallery/types";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -20,6 +21,29 @@
       enhanced: true,
       w: "1280;640;400",
     },
+  });
+
+  const plushyModules = import.meta.glob("$lib/assets/plushie-gallery/*", {
+    query: {
+      enhanced: true,
+      w: "1280;640;400",
+    },
+  });
+
+  const plushyPhotos = Object.entries(plushyModules).map(
+    async ([_path, modFuture]: any) => {
+      const mod: any = await modFuture();
+      return mod?.default;
+    },
+  );
+
+  const plushyComponents = plushyPhotos.map((photo) => {
+    return new PlushyPhotoDatum({
+      component: PlushyPhoto,
+      props: {
+        imageUrl: photo,
+      },
+    });
   });
 
   async function fetchThumbnail(
@@ -521,8 +545,28 @@
 
     <hr />
 
-    <h2>Nimi Plushy Travel Photo Gallery</h2>
-    <PlushyGallery />
+    <div
+      class={[
+        "flex",
+        "flex-col",
+        "items-center",
+        "justify-center",
+        "overflow-hidden",
+        "mx-2",
+        "p-1",
+        "bg-lines",
+        "shadow-xl",
+        "rounded-4xl",
+        "w-full",
+        "max-w-6xl",
+        "space-y-1",
+      ]}
+    >
+      <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
+        Nimi Plushy Travel Photo Gallery
+      </h2>
+      <PlushyGallery data={plushyComponents} />
+    </div>
 
     <hr />
 
