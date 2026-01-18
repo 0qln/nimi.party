@@ -1,5 +1,5 @@
 export    function mulberry32(seed: number) {
-      return function ({ lo = 0, hi = 1 }: { lo?: number; hi?: number }) {
+      return function ({ lo = 0, hi = 1 }: RngParams) {
         let t = (seed += 0x6d2b79f5);
         t = Math.imul(t ^ (t >>> 15), t | 1);
         t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -7,6 +7,8 @@ export    function mulberry32(seed: number) {
         return x * (hi - lo) + lo;
       };
     }
+
+export interface RngParams { lo?: number; hi?: number };
 
 export    function hashCode(str: string): number {
       var h: number = 0;

@@ -1,7 +1,9 @@
 import type { Component } from "svelte";
+import type { RngParams } from "../utils";
 
 export interface PlushyPhotoProps {
     imageUrl?: string|Promise<string>;
+    rng?: (p: RngParams) => number;
   }
 
 export interface PlushyPhotoExports {
