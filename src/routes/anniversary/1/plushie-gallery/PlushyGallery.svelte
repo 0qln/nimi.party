@@ -1,6 +1,7 @@
 <svelte:options customElement="plushy-gallery" />
 
 <script lang="ts">
+  import { mulberry32 } from "../utils";
   import type { PlushyPhotoDatum } from "./types";
 
   interface Props {
@@ -9,6 +10,8 @@
   }
 
   let { data, cols = 3 }: Props = $props();
+
+  let rng = mulberry32(7331);
 </script>
 
 <div
@@ -17,7 +20,7 @@
 >
   {#each data as photo}
     <div class="break-inside-avoid w-full">
-      <photo.component {...photo.props} />
+      <photo.component {rng} {...photo.props} />
     </div>
   {/each}
 </div>
