@@ -526,17 +526,18 @@
       }
     }
 
-    const lineArtifactStart = lineArtifactGap * 2;
-
     // Draw Main Line leafs
     if (lineArtifactGap) {
       const leafs = [];
       const rng = mulberry32(69);
 
+      const lineArtifactStart = lineArtifactGap * 2;
+      const lineArtifactEnd = datumXPosition(data.length - 2);
+
       // leaf
       for (
         let xMain = lineArtifactStart;
-        xMain < lastDatumX();
+        xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
         const index = xMain / lineArtifactGap;
@@ -545,7 +546,7 @@
         const width = lineLeafSize.w;
         const height = lineLeafSize.h;
 
-        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
         const isFirst = xMain == lineArtifactStart;
         const rngOff = lineArtifactGap;
         const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
@@ -575,7 +576,7 @@
       // branch2
       for (
         let xMain = lineArtifactStart;
-        xMain < lastDatumX();
+        xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
         const width = lineBranch2Size.w;
@@ -583,7 +584,7 @@
         const index = xMain / lineArtifactGap;
         const pos = index % 2 == 0 ? "above" : "below";
 
-        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
         const isFirst = xMain == lineArtifactStart;
         const rngOff = lineArtifactGap / 3;
         const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
@@ -613,7 +614,7 @@
       // branchYoung
       for (
         let xMain = lineArtifactStart;
-        xMain < lastDatumX();
+        xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
         const width = lineBranchYoungSize.w;
@@ -621,7 +622,7 @@
         const index = xMain / lineArtifactGap;
         const pos = index % 2 == 0 ? "above" : "below";
 
-        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
         const isFirst = xMain == lineArtifactStart;
         const rngOff = lineArtifactGap / 3;
         const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });

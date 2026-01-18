@@ -504,18 +504,29 @@
         </p>
       </div>
 
-      {#snippet tape(classes: string[])}
+      {#snippet tape()}
         <enhanced:img
-          src="$lib/assets/frame/paper-tape.png?w=100"
+          src="$lib/assets/frame/paper-tape-horizontal.png?w=100"
           sizes="100px"
           alt=""
-          class={["absolute", "h-2.5", "w-2.5", "pt-0.5", "pl-0.5", ...classes]}
+          style:width="{90}px"
+          style:opacity="80%"
         />
       {/snippet}
 
-      {@render tape(["-left-1", "-top-1"])}
+      <div
+        class={["absolute", "top-0.5", "left-0.5"]}
+        style:transform="translate(-50%, -50%) rotate(-45deg)"
+      >
+        {@render tape()}
+      </div>
 
-      {@render tape(["-right-1", "-top-1", "-scale-x-100", "-rotate-6"])}
+      <div
+        class={["absolute", "top-0.5", "right-0.5"]}
+        style:transform="translate(50%, -50%) rotate(45deg)"
+      >
+        {@render tape()}
+      </div>
     </div>
 
     <hr class={["my-1"]} />
