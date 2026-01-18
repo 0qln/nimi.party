@@ -49,7 +49,7 @@
     {#await image then image}
       {#if image}
         <div class="card-media">
-          <enhanced:img src={image} sizes="400px" alt={title} />
+          <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
         </div>
       {/if}
     {/await}
