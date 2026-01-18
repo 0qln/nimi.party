@@ -1,0 +1,34 @@
+name: Deploy Worker
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+    
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+  
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+        
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v3
+        
+      - name: Npm Install
+        run: nix develop --command bash -c "npm i"
+        
+      - name: Npm Build
+        run: nix develop --command bash -c "npm run build"
+      
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
