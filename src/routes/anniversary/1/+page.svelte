@@ -9,8 +9,8 @@
   import PlushyGallery from "./plushie-gallery/PlushyGallery.svelte";
   import Timeline from "./content-list/Timeline.svelte";
   import HorizontalScroll from "./content-list/HorizontalScroll.svelte";
-  import TwigBorder from "./tiling-border/TwigBorder.svelte";
-  import BlossomBorder from "./tiling-border/BlossomBorder.svelte";
+  import TwigBorder from "./frame/TwigBorder.svelte";
+  import BlossomBorder from "./frame/BlossomBorder.svelte";
   import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
   import { PlushyPhotoDatum } from "./plushie-gallery/types";
 
