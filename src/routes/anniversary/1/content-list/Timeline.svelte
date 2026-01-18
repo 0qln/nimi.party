@@ -691,6 +691,7 @@
         .data(leafs)
         .join("image")
         .classed("timeline-main-line-leaf", true)
+        .attr("loading", "lazy")
         .attr("z", -1)
         .attr("width", (d) => d.width)
         .attr("height", (d) => d.height)
