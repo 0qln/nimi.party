@@ -18,7 +18,10 @@
   import * as d3 from "d3";
   import { tick } from "svelte";
 
-  import leafImg from "$lib/assets/frame/eucalyptus-leaf.png";
+  import lineLeaf from "$lib/assets/frame/eucalyptus-leaf.png";
+  import lineBranch2 from "$lib/assets/frame/eucalyptus-branch-small-2.png";
+  import lineBranchYoung from "$lib/assets/frame/eucalyptus-branch-young.png";
+  import lineBlossom from "$lib/assets/frame/blossom-single.png";
   import { isBetween, mulberry32 } from "../utils";
 
   let timelineRef: SVGSVGElement;
@@ -32,14 +35,26 @@
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
 
+  interface Size {
+    w: number;
+    h: number;
+  }
+
   interface Props {
     data: TimelineData;
     orientation?: TimelineOrientation;
     lineColor?: string;
     branchColor?: string;
     lineWidth?: number;
-    lineLeafGap?: number | undefined;
-    lineLeafSize?: number | undefined;
+    lineArtifactGap?: number | undefined;
+    lineLeafSize?: Size | undefined;
+    lineLeafRoot?: string | undefined;
+    lineBranch2Size?: Size | undefined;
+    lineBranch2Root?: string | undefined;
+    lineBranchYoungSize?: Size | undefined;
+    lineBranchYoungRoot?: string | undefined;
+    lineBlossomSize?: Size | undefined;
+    lineBlossomRoot?: string | undefined;
     /// The space in px occupied by a single day.
     pxPerDay?: number;
     showBranches?: boolean;
@@ -59,8 +74,15 @@
     lineColor = "#6F5548",
     branchColor = "#755950",
     lineWidth = 2,
-    lineLeafGap = 300,
-    lineLeafSize = 20,
+    lineArtifactGap = 300,
+    lineLeafSize = { w: 20, h: 20 },
+    lineLeafRoot = "bottom-center",
+    lineBranch2Size = { w: 40, h: 40 },
+    lineBranch2Root = "bottom-center",
+    lineBranchYoungSize = { w: 40, h: 30 },
+    lineBranchYoungRoot = "bottom-left",
+    lineBlossomSize = { w: 25, h: 25 },
+    lineBlossomRoot = "none",
     pxPerDay = 150,
     showBranches = true,
     animate = false,
@@ -481,39 +503,187 @@
         .attr("stroke-dashoffset", 0);
     }
 
+    function isOnSkipSection(x: number): boolean {
+      return skips().some(({ node: s, index }) =>
+        isBetween(
+          x,
+          datumXPosition(index) - skipWidth(s),
+          datumXPosition(index) + skipWidth(s),
+        ),
+      );
+    }
+
+    function rootToOffset(root: string, size: Size): { x: number; y: number } {
+      switch (root) {
+        case "bottom-center":
+          return { x: size.w / 2, y: -size.h };
+        case "bottom-left":
+          return { x: size.w, y: -size.h };
+        case "none":
+          return { x: 0, y: 0 };
+        default:
+          throw Error("unimplemented");
+      }
+    }
+
+    const lineArtifactStart = lineArtifactGap * 2;
+
     // Draw Main Line leafs
-    if (lineLeafGap) {
+    if (lineArtifactGap) {
       const leafs = [];
       const rng = mulberry32(69);
-      for (let x = lineLeafGap * 2; x < lastDatumX(); x += lineLeafGap) {
+
+      // leaf
+      for (
+        let xMain = lineArtifactStart;
+        xMain < lastDatumX();
+        xMain += lineArtifactGap
+      ) {
+        const index = xMain / lineArtifactGap;
+        const pos = index % 3 == 0 ? "above" : "below";
+
+        const width = lineLeafSize.w;
+        const height = lineLeafSize.h;
+
+        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isFirst = xMain == lineArtifactStart;
+        const rngOff = lineArtifactGap;
+        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
+
+        const x = padding + xMain + xRng;
+        const y = yPos;
+
+        const root = rootToOffset(lineLeafRoot, lineLeafSize);
+
         // don't draw the leafes on skip squiggles
-        if (
-          skips().some(({ node: s, index }) =>
-            isBetween(
-              x,
-              datumXPosition(index) - skipWidth(s),
-              datumXPosition(index) + skipWidth(s),
-            ),
-          )
-        ) {
+        if (isOnSkipSection(x)) {
           continue;
         }
 
-        const height = lineLeafSize;
-        const width = lineLeafSize;
-        const index = x / lineLeafGap;
-        const pos = index % 2 == 0 ? "above" : "below";
-        const rngOff = lineLeafGap / 3;
-        const y = yPos + (pos == "above" ? -height : 0);
         leafs.push({
-          pos,
+          mirror: pos === "below",
           index,
-          x: padding + x + rng({ lo: rngOff, hi: rngOff }),
+          x,
           y,
+          root,
           width,
           height,
-          src: leafImg,
+          src: lineLeaf,
         });
+      }
+
+      // branch2
+      for (
+        let xMain = lineArtifactStart;
+        xMain < lastDatumX();
+        xMain += lineArtifactGap
+      ) {
+        const width = lineBranch2Size.w;
+        const height = lineBranch2Size.h;
+        const index = xMain / lineArtifactGap;
+        const pos = index % 2 == 0 ? "above" : "below";
+
+        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isFirst = xMain == lineArtifactStart;
+        const rngOff = lineArtifactGap / 3;
+        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
+
+        const x = padding + xMain + xRng;
+        const y = yPos;
+
+        const root = rootToOffset(lineBranch2Root, lineBranch2Size);
+
+        // don't draw the leafes on skip squiggles
+        if (isOnSkipSection(x)) {
+          continue;
+        }
+
+        leafs.push({
+          mirror: pos === "below",
+          index,
+          x,
+          y,
+          root,
+          width,
+          height,
+          src: lineBranch2,
+        });
+      }
+
+      // branchYoung
+      for (
+        let xMain = lineArtifactStart;
+        xMain < lastDatumX();
+        xMain += lineArtifactGap
+      ) {
+        const width = lineBranchYoungSize.w;
+        const height = lineBranchYoungSize.h;
+        const index = xMain / lineArtifactGap;
+        const pos = index % 2 == 0 ? "above" : "below";
+
+        const isLast = xMain + lineArtifactGap >= lastDatumX();
+        const isFirst = xMain == lineArtifactStart;
+        const rngOff = lineArtifactGap / 3;
+        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
+
+        const x = padding + xMain + xRng + 10;
+        const y = yPos;
+
+        const root = rootToOffset(lineBranchYoungRoot, lineBranchYoungSize);
+
+        // don't draw the leafes on skip squiggles
+        if (isOnSkipSection(x)) {
+          continue;
+        }
+
+        leafs.push({
+          mirror: pos === "below",
+          index,
+          x,
+          y,
+          root,
+          width,
+          height,
+          src: lineBranchYoung,
+        });
+      }
+
+      // blossom
+      if (false) {
+        for (
+          let xMain = lineArtifactStart;
+          xMain < lastDatumX();
+          xMain += lineArtifactGap
+        ) {
+          const width = lineBlossomSize.w;
+          const height = lineBlossomSize.h;
+          const index = xMain / lineArtifactGap;
+          const pos = index % 2 == 0 ? "above" : "below";
+
+          const x = padding + xMain + 5;
+          const y =
+            yPos -
+            (pos === "above" ? height : 0) +
+            (pos === "above" ? -10 : 10);
+
+          const root = rootToOffset(lineBlossomRoot, lineBlossomSize);
+
+          // don't draw the leafes on skip squiggles
+          if (isOnSkipSection(x)) {
+            continue;
+          }
+
+          leafs.push({
+            mirror: false,
+            index,
+            x,
+            y,
+            root,
+            width,
+            height,
+            src: lineBlossom,
+          });
+        }
       }
 
       root
@@ -521,21 +691,22 @@
         .data(leafs)
         .join("image")
         .classed("timeline-main-line-leaf", true)
-        .attr("x", (d) => d.x)
-        .attr("y", (d) => d.y)
         .attr("z", -1)
         .attr("width", (d) => d.width)
         .attr("height", (d) => d.height)
-        .attr(
-          "transform-origin",
-          (d) => `${d.x + d.width / 2} ${d.y + d.height / 2}`,
+        .attr("transform", (d) =>
+          formatTransforms([
+            `translate(${d.x}, ${d.y})`,
+            `scale(1, ${d.mirror ? -1 : 1})`,
+            `translate(${d.root.x}, ${d.root.y})`,
+          ]),
         )
-        .attr(
-          "transform",
-          (d) => `rotate(${90 + (d.pos === "below" ? 45 : -45)})`,
-        )
-        .attr("href", (d) => d.src)
-        .attr("id", (d) => `timeline-main-line-leaf-${d.index}`);
+        .attr("href", (d) => d.src);
+      //.attr("id", (d) => `timeline-main-line-leaf-${d.index}`);
+    }
+
+    function formatTransforms(transforms: Array<string>): string {
+      return "".concat(...transforms.map((x) => x + " "));
     }
 
     // Bind data
