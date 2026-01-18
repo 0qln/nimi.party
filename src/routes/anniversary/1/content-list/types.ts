@@ -57,6 +57,26 @@ export class TimelineEvent {
     }
 }
 
+export interface TimelineDecorationProps {
+
+}
+
+export interface TimelineDecorationExports {
+    // maybe use something like this later if you want to animate
+    // the decoration using d3
+    // getRef():
+}
+
+export type TimelineDecorationComponent = Component<
+    TimelineDecorationProps,
+    TimelineDecorationExports,
+    ""
+>;
+
+export class TimelineDecoration {
+    component?: TimelineDecorationComponent;
+}
+
 export type TimelineOrientation = "horizontal" | "vertical";
 
 export type TimelineNodePosition = "above" | "below" | "left" | "right";
