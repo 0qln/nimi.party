@@ -18,19 +18,21 @@
   import * as d3 from "d3";
   import { tick } from "svelte";
 
-  import lineLeaf from "$lib/assets/frame/eucalyptus-leaf.png";
-  import lineBranch2 from "$lib/assets/frame/eucalyptus-branch-small-2.png";
-  import lineBranchYoung from "$lib/assets/frame/eucalyptus-branch-young.png";
-  import lineBlossom from "$lib/assets/frame/blossom-single.png";
+  import lineLeaf from "$lib/assets/frame/eucalyptus-leaf.png?enhanced&w=100";
+  import lineBranch2 from "$lib/assets/frame/eucalyptus-branch-small-2.png?enhanced&w=100";
+  import lineBranchYoung from "$lib/assets/frame/eucalyptus-branch-young.png?enhanced&w=100";
+  import lineBlossom from "$lib/assets/frame/blossom-single.png?enhanced&w=100";
+
   import { isBetween, mulberry32 } from "../utils";
 
-  let timelineRef: SVGSVGElement;
   let branchesRef: SVGSVGElement;
+  let lineGroupRef: SVGGElement;
   let eventsRef: HTMLDivElement;
   let containerRef: HTMLDivElement;
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
+  let decorations = $state<TimelineDecoration[]>([]);
 
   let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
   let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
@@ -38,6 +40,14 @@
   interface Size {
     w: number;
     h: number;
+  }
+
+  interface TimelineDecoration {
+    id: string;
+    src: string | object;
+    style: string;
+    width: number;
+    height: number;
   }
 
   interface Props {
@@ -441,7 +451,8 @@
   });
 
   async function drawTimeline(dims: TimelineDimensions) {
-    if (!timelineRef || !branchesRef || !eventsRef || data.length === 0) return;
+    if (!lineGroupRef || !branchesRef || !eventsRef || data.length === 0)
+      return;
 
     // 1. Render/Update Nodes DOM elements
     await drawNodes();
@@ -462,18 +473,17 @@
   }
 
   function drawHorizontalTimeline(dims: TimelineDimensions): void {
-    const root = select(timelineRef);
+    const lineGroup = select(lineGroupRef);
     const branchRoot = select(branchesRef);
 
     // Clear previous SVG elements to redraw
     branchRoot.selectAll("*").remove();
-    root.selectAll("*").remove();
+    lineGroup.selectAll("*").remove();
     branchesSel = [];
 
     const minRequiredWidth = contentWidth();
 
     // The final width is the maximum of the viewport (available space) and the required content width.
-    // This allows the timeline to scroll if content > viewport, but span full width if content < viewport.
     const parentWidth = containerRef.parentElement?.clientWidth || 0;
     const finalWidth = Math.max(parentWidth, minRequiredWidth);
 
@@ -484,7 +494,7 @@
     const yPos = dims.height / 2;
 
     // Draw Main Line
-    timelineSel = root
+    timelineSel = lineGroup
       .append("path")
       .attr("d", mainPath(padding, yPos))
       .attr("stroke", lineColor)
@@ -526,13 +536,103 @@
       }
     }
 
-    // Draw Main Line leafs
-    if (lineArtifactGap) {
-      const leafs = [];
-      const rng = mulberry32(69);
+    // Calculate Main Line leafs (Refactored to Svelte state)
+    const newDecorations: TimelineDecoration[] = [];
 
+    if (lineArtifactGap) {
+      const rng = mulberry32(69);
       const lineArtifactStart = lineArtifactGap * 2;
       const lineArtifactEnd = datumXPosition(data.length - 2);
+
+      const addDecoration = (
+        xMain: number,
+        type: "leaf" | "branch2" | "young" | "blossom",
+      ) => {
+        let size: Size;
+        let rootStr: string;
+        let src: string | object;
+        let xOffset = 0;
+        let yOffsetMod = 0;
+        let rngOffFactor = 1;
+
+        if (type === "leaf") {
+          size = lineLeafSize;
+          rootStr = lineLeafRoot;
+          src = lineLeaf;
+          rngOffFactor = 1;
+        } else if (type === "branch2") {
+          size = lineBranch2Size;
+          rootStr = lineBranch2Root;
+          src = lineBranch2;
+          rngOffFactor = 0.33;
+        } else if (type === "young") {
+          size = lineBranchYoungSize;
+          rootStr = lineBranchYoungRoot;
+          src = lineBranchYoung;
+          xOffset = 10;
+          rngOffFactor = 0.33;
+        } else {
+          // blossom
+          size = lineBlossomSize;
+          rootStr = lineBlossomRoot;
+          src = lineBlossom;
+          xOffset = 5;
+        }
+
+        const width = size.w;
+        const height = size.h;
+        const index = xMain / lineArtifactGap;
+        // logic differs slightly per type for pos
+        const pos =
+          type === "leaf"
+            ? index % 3 == 0
+              ? "above"
+              : "below"
+            : index % 2 == 0
+              ? "above"
+              : "below";
+
+        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
+        const isFirst = xMain == lineArtifactStart;
+        const rngOff = lineArtifactGap * rngOffFactor;
+
+        // Blossom has specific Y logic
+        if (type === "blossom") {
+          // Blossom logic from original
+          const x = padding + xMain + 5;
+          const y =
+            yPos -
+            (pos === "above" ? height : 0) +
+            (pos === "above" ? -10 : 10);
+          const root = rootToOffset(rootStr, size);
+          if (!isOnSkipSection(x)) {
+            newDecorations.push({
+              id: `blossom-${index}`,
+              src,
+              width,
+              height,
+              style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, 1) translate(${root.x}px, ${root.y}px);`,
+            });
+          }
+          return;
+        }
+
+        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
+        const x = padding + xMain + xRng + xOffset;
+        const y = yPos;
+        const root = rootToOffset(rootStr, size);
+
+        if (!isOnSkipSection(x)) {
+          const mirror = pos === "below";
+          newDecorations.push({
+            id: `${type}-${index}`,
+            src,
+            width,
+            height,
+            style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, ${mirror ? -1 : 1}) translate(${root.x}px, ${root.y}px);`,
+          });
+        }
+      };
 
       // leaf
       for (
@@ -540,37 +640,7 @@
         xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
-        const index = xMain / lineArtifactGap;
-        const pos = index % 3 == 0 ? "above" : "below";
-
-        const width = lineLeafSize.w;
-        const height = lineLeafSize.h;
-
-        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
-        const isFirst = xMain == lineArtifactStart;
-        const rngOff = lineArtifactGap;
-        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
-
-        const x = padding + xMain + xRng;
-        const y = yPos;
-
-        const root = rootToOffset(lineLeafRoot, lineLeafSize);
-
-        // don't draw the leafes on skip squiggles
-        if (isOnSkipSection(x)) {
-          continue;
-        }
-
-        leafs.push({
-          mirror: pos === "below",
-          index,
-          x,
-          y,
-          root,
-          width,
-          height,
-          src: lineLeaf,
-        });
+        addDecoration(xMain, "leaf");
       }
 
       // branch2
@@ -579,36 +649,7 @@
         xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
-        const width = lineBranch2Size.w;
-        const height = lineBranch2Size.h;
-        const index = xMain / lineArtifactGap;
-        const pos = index % 2 == 0 ? "above" : "below";
-
-        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
-        const isFirst = xMain == lineArtifactStart;
-        const rngOff = lineArtifactGap / 3;
-        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
-
-        const x = padding + xMain + xRng;
-        const y = yPos;
-
-        const root = rootToOffset(lineBranch2Root, lineBranch2Size);
-
-        // don't draw the leafes on skip squiggles
-        if (isOnSkipSection(x)) {
-          continue;
-        }
-
-        leafs.push({
-          mirror: pos === "below",
-          index,
-          x,
-          y,
-          root,
-          width,
-          height,
-          src: lineBranch2,
-        });
+        addDecoration(xMain, "branch2");
       }
 
       // branchYoung
@@ -617,36 +658,7 @@
         xMain < lineArtifactEnd;
         xMain += lineArtifactGap
       ) {
-        const width = lineBranchYoungSize.w;
-        const height = lineBranchYoungSize.h;
-        const index = xMain / lineArtifactGap;
-        const pos = index % 2 == 0 ? "above" : "below";
-
-        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
-        const isFirst = xMain == lineArtifactStart;
-        const rngOff = lineArtifactGap / 3;
-        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
-
-        const x = padding + xMain + xRng + 10;
-        const y = yPos;
-
-        const root = rootToOffset(lineBranchYoungRoot, lineBranchYoungSize);
-
-        // don't draw the leafes on skip squiggles
-        if (isOnSkipSection(x)) {
-          continue;
-        }
-
-        leafs.push({
-          mirror: pos === "below",
-          index,
-          x,
-          y,
-          root,
-          width,
-          height,
-          src: lineBranchYoung,
-        });
+        addDecoration(xMain, "young");
       }
 
       // blossom
@@ -656,60 +668,13 @@
           xMain < lastDatumX();
           xMain += lineArtifactGap
         ) {
-          const width = lineBlossomSize.w;
-          const height = lineBlossomSize.h;
-          const index = xMain / lineArtifactGap;
-          const pos = index % 2 == 0 ? "above" : "below";
-
-          const x = padding + xMain + 5;
-          const y =
-            yPos -
-            (pos === "above" ? height : 0) +
-            (pos === "above" ? -10 : 10);
-
-          const root = rootToOffset(lineBlossomRoot, lineBlossomSize);
-
-          // don't draw the leafes on skip squiggles
-          if (isOnSkipSection(x)) {
-            continue;
-          }
-
-          leafs.push({
-            mirror: false,
-            index,
-            x,
-            y,
-            root,
-            width,
-            height,
-            src: lineBlossom,
-          });
+          addDecoration(xMain, "blossom");
         }
       }
-
-      root
-        .selectAll("img.timeline-main-line-leaf")
-        .data(leafs)
-        .join("image")
-        .classed("timeline-main-line-leaf", true)
-        .attr("loading", "lazy")
-        .attr("z", -1)
-        .attr("width", (d) => d.width)
-        .attr("height", (d) => d.height)
-        .attr("transform", (d) =>
-          formatTransforms([
-            `translate(${d.x}, ${d.y})`,
-            `scale(1, ${d.mirror ? -1 : 1})`,
-            `translate(${d.root.x}, ${d.root.y})`,
-          ]),
-        )
-        .attr("href", (d) => d.src);
-      //.attr("id", (d) => `timeline-main-line-leaf-${d.index}`);
     }
 
-    function formatTransforms(transforms: Array<string>): string {
-      return "".concat(...transforms.map((x) => x + " "));
-    }
+    // Update Svelte state
+    decorations = newDecorations;
 
     // Bind data
     const eventsSel = select(eventsRef)
@@ -809,11 +774,25 @@
 
   <svg
     class="timeline-main"
-    bind:this={timelineRef}
     width="100%"
     height="100%"
     aria-label="Timeline main line"
-  ></svg>
+  >
+    <!-- Group for D3 to draw the main path into -->
+    <g bind:this={lineGroupRef}></g>
+  </svg>
+
+  <div class="timeline-decorations">
+    {#each decorations as d (d.id)}
+      <enhanced:img
+        class="timeline-main-line-leaf"
+        src={d.src}
+        alt=""
+        style={d.style}
+        sizes="100px"
+      />
+    {/each}
+  </div>
 
   <div class="timeline-nodes" bind:this={eventsRef}>
     {#each events().map( (x, i) => ({ x, i }), ) as { x: { node }, i } (node.id || i)}
@@ -850,10 +829,21 @@
   }
 
   .timeline-main,
-  .timeline-branches {
+  .timeline-branches,
+  .timeline-decorations {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .timeline-decorations {
+    overflow: hidden;
+  }
+
+  :global(.timeline-main-line-leaf) {
     pointer-events: none;
   }
 
