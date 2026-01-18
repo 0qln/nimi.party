@@ -541,7 +541,7 @@
 
     if (lineArtifactGap) {
       const rng = mulberry32(69);
-      const lineArtifactStart = lineArtifactGap * 2;
+      const lineArtifactStart = lineArtifactGap;
       const lineArtifactEnd = datumXPosition(data.length - 2);
 
       const addDecoration = (
