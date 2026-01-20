@@ -2,23 +2,23 @@ import type { Component } from "svelte";
 import type { RngParams } from "../utils";
 
 export interface PlushyPhotoProps {
-    imageUrl?: string|Promise<string>;
-    rng?: (p: RngParams) => number;
-  }
+  imageUrl?: string | Promise<string>;
+  rng?: (p: RngParams) => number;
+}
 
 export interface PlushyPhotoExports {
-    // getRect: () => DOMRect|undefined
+  // getRect: () => DOMRect|undefined
 }
 
 export type PlushyPhotoComponent = Component<
-    PlushyPhotoProps,
-    PlushyPhotoExports,
-    ""
+  PlushyPhotoProps,
+  PlushyPhotoExports,
+  ""
 >;
 
 export class PlushyPhotoDatum {
-    component?: PlushyPhotoComponent;
-    props?: PlushyPhotoProps;
+  component?: PlushyPhotoComponent;
+  props?: PlushyPhotoProps;
 
   constructor(data: Partial<PlushyPhotoDatum>) {
     Object.assign(this, data);
