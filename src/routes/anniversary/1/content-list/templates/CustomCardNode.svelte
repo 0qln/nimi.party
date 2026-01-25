@@ -159,7 +159,7 @@
   .card-root {
     --transition-speed: 0.4s;
     --card-bg: var(--bg-color-dark);
-    --card-body-bg: var(--bg-color);
+    --card-body-bg: var(--bg-color-paper);
     --card-radius: 12px;
     --card-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

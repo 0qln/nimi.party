@@ -276,7 +276,7 @@
       "2025-08-25",
       "[SKYBLOCK MINECRAFT] On a Monday??? | Day 3",
       `
-
+        Minecraft? On a Monday??? New texture pack locked and loaded, Nimi advocates from the Mizuno Craft aesthetic. EMBRACE THE COTTAGECORE AESTHETIC. Basically, according to our gaming tapir, the ability to install Minecraft texture packs is the tech literacy litmus test. While the Nether reached and the mob farm humming, Nimi turns her attention back to building her cozy Skyblock cottage with a real nice view of Party City.
       `,
     ),
     tsEventNode(
