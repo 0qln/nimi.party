@@ -5,6 +5,13 @@
     --bg-color-accent: #d1e6d3;
     --bg-color-dark: #254031;
     --accent-color: #A8BF68;
+    --accent-color-pink: #FD8BA8;
+    --accent-color-orange: #FDBD6C;
+    --accent-color-turquoise: #00C0BA;
+    --accent-color-blue: #239DCA;
+    --accent-color-darkblue: #017B9B;
+    --accent-color-green: #6DAF5F;
+    --accent-color-darkgreen: #03695E;
     --text-color-h1: #254031;
     --text-color-h2: color-mix(in srgb, var(--text-color-h1) 70%, var(--accent-color));
     --text-color-p: color-mix(in srgb, var(--text-color-h1) 90%, var(--accent-color));
