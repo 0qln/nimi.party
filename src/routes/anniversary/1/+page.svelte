@@ -12,7 +12,10 @@
   import TwigBorder from "./frame/TwigBorder.svelte";
   import BlossomBorder from "./frame/BlossomBorder.svelte";
   import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
-  import { PlushyPhotoDatum } from "./plushie-gallery/types";
+  import {
+    PlushyPhotoDatum,
+    type PlushMetadata,
+  } from "./plushie-gallery/types";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -30,18 +33,91 @@
     },
   });
 
-  const plushyPhotos = Object.entries(plushyModules).map(
-    async ([_path, modFuture]: any) => {
-      const mod: any = await modFuture();
-      return mod?.default;
-    },
-  );
+  function parsePlushCSV(csvData: string): PlushMetadata[] {
+    const lines: string[] = [];
+    let currentField = "";
+    let inQuotes = false;
+    let currentLine: string[] = [];
 
-  const plushyComponents = plushyPhotos.map((photo) => {
+    // Iterate through characters to handle CSV formatting (quotes, newlines in fields)
+    for (let i = 0; i < csvData.length; i++) {
+      const char = csvData[i];
+      const nextChar = csvData[i + 1];
+
+      if (char === '"' && inQuotes && nextChar === '"') {
+        // Handle escaped quotes ("")
+        currentField += '"';
+        i++;
+      } else if (char === '"') {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        // End of field
+        currentLine.push(currentField.trim());
+        currentField = "";
+      } else if ((char === "\r" || char === "\n") && !inQuotes) {
+        // End of line
+        currentLine.push(currentField.trim());
+        if (currentLine.length > 1) {
+          lines.push(currentLine.join("|DELIMITER|")); // Temporary join to clean up
+        }
+        currentLine = [];
+        currentField = "";
+        if (char === "\r" && nextChar === "\n") i++; // Skip \n in \r\n
+      } else {
+        currentField += char;
+      }
+    }
+
+    // Push the final field/line if exists
+    if (currentField || currentLine.length > 0) {
+      currentLine.push(currentField.trim());
+      lines.push(currentLine.join("|DELIMITER|"));
+    }
+
+    // Map the raw lines to objects, skipping the header row
+    return lines.slice(1).map((line) => {
+      const columns = line.split("|DELIMITER|");
+
+      return {
+        timestamp: columns[0] || "",
+        emailAddress: columns[1] || "",
+        country: columns[2] || "",
+        message: columns[3] || "",
+        nickname: columns[4] || "",
+        socialAccount: columns[5] || "",
+        secondaryEmail: columns[6] || "",
+        photoFilename: columns[7] || "",
+        isImageAssetMade: columns[8]?.toUpperCase() === "TRUE",
+      };
+    });
+  }
+
+  import plushyCsv from "$lib/assets/plushie-gallery/meta/plush-Photos_form-responses.csv?raw";
+  const plushyResponses = parsePlushCSV(plushyCsv);
+  const findPlushyMeta = (imageUrl: string) => {
+    return plushyResponses.find((x) => imageUrl.includes(x.photoFilename));
+  };
+
+  const unpackModule = async (modFuture: any) => {
+    const mod: any = await modFuture();
+    return mod?.default;
+  };
+
+  const plushyPhotos = Object.keys(plushyModules).map((path) => {
+    return {
+      path,
+      mod: unpackModule(plushyModules[path]),
+    };
+  });
+
+  const plushyComponents = plushyPhotos.map(({ path, mod }) => {
     return new PlushyPhotoDatum({
       component: PlushyPhoto,
       props: {
-        imageUrl: photo,
+        imageUrl: mod,
+        path: path,
+        meta: findPlushyMeta(path),
       },
     });
   });

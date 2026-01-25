@@ -1,8 +1,22 @@
 import type { Component } from "svelte";
 import type { RngParams } from "../utils";
 
+export interface PlushMetadata {
+  timestamp: string;
+  emailAddress: string;
+  country: string;
+  message: string;
+  nickname: string;
+  socialAccount: string;
+  secondaryEmail: string;
+  photoFilename: string;
+  isImageAssetMade: boolean;
+}
+
 export interface PlushyPhotoProps {
-  imageUrl?: string | Promise<string>;
+  imageUrl?: string | Promise<unknown>;
+  path?: string;
+  meta?: PlushMetadata;
   rng?: (p: RngParams) => number;
 }
 

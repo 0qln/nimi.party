@@ -4,7 +4,11 @@
   import type { PlushyPhotoProps } from "./types";
   import nimiBall from "$lib/assets/misc/nimi-ball.gif";
 
-  let { imageUrl = "", rng = (_) => 0 }: PlushyPhotoProps = $props();
+  let {
+    imageUrl = "",
+    meta = undefined,
+    rng = (_) => 0,
+  }: PlushyPhotoProps = $props();
 
   let isLoaded = $state(false);
 
@@ -27,7 +31,7 @@
   />
 {/snippet}
 
-{#snippet img(url: string)}
+{#snippet img(url: any)}
   <div style:max-width="400px" class={["relative"]}>
     {#if !isLoaded}
       <div
@@ -68,6 +72,8 @@
         loading="lazy"
         onload={() => (isLoaded = true)}
       />
+
+      <p>{meta?.message}</p>
     </div>
   </div>
 {/snippet}
