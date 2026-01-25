@@ -1,6 +1,7 @@
 :global(:root) {
     --bg-color: #fdf5e0;
     --bg-color-alt: #d8ceb5;
+    --bg-color-paper: #fcf6ea;
     --bg-color-accent: #d1e6d3;
     --bg-color-dark: #254031;
     --accent-color: #A8BF68;
