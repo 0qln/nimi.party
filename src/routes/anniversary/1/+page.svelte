@@ -16,6 +16,7 @@
     PlushyPhotoDatum,
     type PlushMetadata,
   } from "./plushie-gallery/types";
+  import csv from "csvtojson";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -33,70 +34,41 @@
     },
   });
 
-  function parsePlushCSV(csvData: string): PlushMetadata[] {
-    const lines: string[] = [];
-    let currentField = "";
-    let inQuotes = false;
-    let currentLine: string[] = [];
+  async function parsePlushCSV(csvData: string): Promise<PlushMetadata[]> {
+    // We manually define headers to map the CSV columns to our clean interface keys.
+    // This array must match the column order in your CSV exactly.
+    const headers = [
+      "timestamp",
+      "emailAddress",
+      "country",
+      "message",
+      "nickname",
+      "socialAccount",
+      "secondaryEmail",
+      "photoFilename",
+      "isImageAssetMade",
+    ];
 
-    // Iterate through characters to handle CSV formatting (quotes, newlines in fields)
-    for (let i = 0; i < csvData.length; i++) {
-      const char = csvData[i];
-      const nextChar = csvData[i + 1];
-
-      if (char === '"' && inQuotes && nextChar === '"') {
-        // Handle escaped quotes ("")
-        currentField += '"';
-        i++;
-      } else if (char === '"') {
-        // Toggle quote state
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        // End of field
-        currentLine.push(currentField.trim());
-        currentField = "";
-      } else if ((char === "\r" || char === "\n") && !inQuotes) {
-        // End of line
-        currentLine.push(currentField.trim());
-        if (currentLine.length > 1) {
-          lines.push(currentLine.join("|DELIMITER|")); // Temporary join to clean up
-        }
-        currentLine = [];
-        currentField = "";
-        if (char === "\r" && nextChar === "\n") i++; // Skip \n in \r\n
-      } else {
-        currentField += char;
-      }
-    }
-
-    // Push the final field/line if exists
-    if (currentField || currentLine.length > 0) {
-      currentLine.push(currentField.trim());
-      lines.push(currentLine.join("|DELIMITER|"));
-    }
-
-    // Map the raw lines to objects, skipping the header row
-    return lines.slice(1).map((line) => {
-      const columns = line.split("|DELIMITER|");
-
-      return {
-        timestamp: columns[0] || "",
-        emailAddress: columns[1] || "",
-        country: columns[2] || "",
-        message: columns[3] || "",
-        nickname: columns[4] || "",
-        socialAccount: columns[5] || "",
-        secondaryEmail: columns[6] || "",
-        photoFilename: columns[7] || "",
-        isImageAssetMade: columns[8]?.toUpperCase() === "TRUE",
-      };
+    const converter = csv({
+      noheader: false,
+      headers: headers,
+      output: "json",
+      checkType: false,
+      colParser: {
+        isImageAssetMade: (item: string) => item?.toUpperCase() === "TRUE",
+      },
     });
+
+    return (await converter.fromString(csvData)) as PlushMetadata[];
   }
 
   import plushyCsv from "$lib/assets/plushie-gallery/meta/plush-Photos_form-responses.csv?raw";
-  const plushyResponses = parsePlushCSV(plushyCsv);
+  const plushyResponses = await parsePlushCSV(plushyCsv);
+  const sanitize = (x: string) => x.replace(/'/g, "_");
   const findPlushyMeta = (imageUrl: string) => {
-    return plushyResponses.find((x) => imageUrl.includes(x.photoFilename));
+    return plushyResponses.find((x) =>
+      imageUrl.includes(sanitize(x.photoFilename)),
+    );
   };
 
   const unpackModule = async (modFuture: any) => {
@@ -801,7 +773,7 @@
         "mx-2",
         "mt-3",
         "p-1",
-        "bg-lines",
+        "bg-dots",
         "shadow-xl",
         "rounded-4xl",
         "w-full",
