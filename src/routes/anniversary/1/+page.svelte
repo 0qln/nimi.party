@@ -528,6 +528,44 @@
   <title>Nimi 1st Anniversary</title>
 </svelte:head>
 
+{#snippet tape1()}
+  <enhanced:img
+    src="$lib/assets/frame/tape-1.png"
+    sizes="200px"
+    alt=""
+    style:width="{90}px"
+    style:opacity="80%"
+  />
+{/snippet}
+
+{#snippet tape2()}
+  <enhanced:img
+    src="$lib/assets/frame/tape-2.png"
+    sizes="200px"
+    alt=""
+    style:width="{90}px"
+    style:opacity="80%"
+  />
+{/snippet}
+
+{#snippet pinRight()}
+  <enhanced:img
+    src="$lib/assets/frame/pin-right.png"
+    sizes="100px"
+    alt=""
+    style:width="{50}px"
+  />
+{/snippet}
+
+{#snippet pinLeft()}
+  <enhanced:img
+    src="$lib/assets/frame/pin-left.png"
+    sizes="100px"
+    alt=""
+    style:width="{50}px"
+  />
+{/snippet}
+
 <main class={["bg-tartan"]}>
   <div
     id="home-section"
@@ -652,7 +690,7 @@
       </div>
     </div>
 
-    <hr class={["my-1"]} />
+    <hr class={["my-0.5"]} />
 
     <div
       style:--bg-lines-spacing={"1.8em"}
@@ -680,32 +718,22 @@
         </p>
       </div>
 
-      {#snippet tape()}
-        <enhanced:img
-          src="$lib/assets/frame/paper-tape-horizontal.png?w=100"
-          sizes="100px"
-          alt=""
-          style:width="{90}px"
-          style:opacity="80%"
-        />
-      {/snippet}
-
       <div
         class={["absolute", "top-0.5", "left-0.5"]}
         style:transform="translate(-50%, -50%) rotate(-45deg)"
       >
-        {@render tape()}
+        {@render tape1()}
       </div>
 
       <div
         class={["absolute", "top-0.5", "right-0.5"]}
         style:transform="translate(50%, -50%) rotate(45deg)"
       >
-        {@render tape()}
+        {@render tape2()}
       </div>
     </div>
 
-    <hr class={["my-1"]} />
+    <hr class={["my-2"]} />
 
     <div
       class={[
@@ -713,7 +741,6 @@
         "flex-col",
         "items-center",
         "justify-center",
-        "overflow-hidden",
         "px-3",
         "w-full",
       ]}
@@ -723,7 +750,7 @@
         style:--bg-lines-spacing={"1.8em"}
         class={[
           "relative",
-          "max-w-5xl",
+          "max-w-3xl",
           "mx-2",
           "p-1",
           "bg-lines",
@@ -731,24 +758,40 @@
           "rounded-4xl",
           "flex",
           "flex-col",
-          "space-y-1",
+          "overflow-visible",
         ]}
       >
-        <h2
-          class={[
-            "text-4xl",
-            "-mt-0.5",
-            "text-center",
-            "pacifico-regular",
-            "underline",
-          ]}
+        <div class={["flex", "flex-col", "space-y-1"]}>
+          <h2
+            class={[
+              "text-4xl",
+              "-mt-0.5",
+              "text-center",
+              "pacifico-regular",
+              "underline",
+            ]}
+          >
+            Timeline
+          </h2>
+          <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+            Lots of things happened in the past year! Let’s look back at the
+            streams, events, and milestones Nimi has done!
+          </p>
+        </div>
+
+        <div
+          class={["absolute", "top-0", "left-1/4"]}
+          style:transform="translate(-50%, -50%) rotate(-5deg)"
         >
-          Timeline
-        </h2>
-        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-          Lots of things happened in the past year! Let’s look back at the
-          streams, events, and milestones Nimi has done!
-        </p>
+          {@render tape1()}
+        </div>
+
+        <div
+          class={["absolute", "top-0", "left-3/4"]}
+          style:transform="translate(-50%, -50%) rotate(5deg)"
+        >
+          {@render tape2()}
+        </div>
       </div>
 
       <BlossomBorder clazz={["mt-3", "mb-2"]}>
@@ -765,6 +808,7 @@
     <div
       id="plushy-section"
       class={[
+        "relative",
         "flex",
         "flex-col",
         "items-center",
@@ -792,6 +836,20 @@
         around!
       </p>
       <PlushyGallery data={plushyComponents} />
+
+      <!-- todo: y spacing fix -->
+      <div
+        class={["absolute", "top-1", "right-0"]}
+        style:transform="translate(-50%, -50%)"
+      >
+        {@render pinRight()}
+      </div>
+      <div
+        class={["absolute", "top-1", "left-1"]}
+        style:transform="translate(-50%, -50%)"
+      >
+        {@render pinLeft()}
+      </div>
     </div>
 
     <hr class={["my-1"]} />
@@ -809,63 +867,78 @@
         "rounded-4xl",
         "flex",
         "flex-col",
-        "space-y-1",
       ]}
     >
-      <h2
-        class={[
-          "text-4xl",
-          "-mt-0.5",
-          "text-center",
-          "pacifico-regular",
-          "underline",
-        ]}
-      >
-        Project Credits
-      </h2>
-      <div class={["grid", "grid-cols-2", "gap-x-1", "mt-0.5"]}>
-        {#each volunteers as volunteer}
-          <p
-            style:line-height={"var(--spacing)"}
-            class={["font-medium", "text-xl", "text-right", "text-end"]}
-          >
-            <span style:vertical-align="bottom">{volunteer.role}</span>
-          </p>
-          <div
-            style:height={"1.8em"}
-            class={["flex", "flex-row", "items-center", "space-x-0.5"]}
-          >
-            <p class={["font-medium", "text-xl"]}>
-              {volunteer.name}
+      <div class={["flex", "flex-col", "space-y-1"]}>
+        <h2
+          class={[
+            "text-4xl",
+            "-mt-0.5",
+            "text-center",
+            "pacifico-regular",
+            "underline",
+          ]}
+        >
+          Project Credits
+        </h2>
+        <div class={["grid", "grid-cols-2", "gap-x-1", "mt-0.5"]}>
+          {#each volunteers as volunteer}
+            <p
+              style:line-height={"var(--spacing)"}
+              class={["font-medium", "text-xl", "text-right", "text-end"]}
+            >
+              <span style:vertical-align="bottom">{volunteer.role}</span>
             </p>
-            {#if volunteer.link}
-              <a
-                href={volunteer.link}
-                target="_blank"
-                aria-label="External link to volunteer"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class={["size-0.5", "card-icon"]}
+            <div
+              style:height={"1.8em"}
+              class={["flex", "flex-row", "items-center", "space-x-0.5"]}
+            >
+              <p class={["font-medium", "text-xl"]}>
+                {volunteer.name}
+              </p>
+              {#if volunteer.link}
+                <a
+                  href={volunteer.link}
+                  target="_blank"
+                  aria-label="External link to volunteer"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
-                  />
-                </svg>
-              </a>
-            {/if}
-          </div>
-        {/each}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class={["size-0.5", "card-icon"]}
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+                    />
+                  </svg>
+                </a>
+              {/if}
+            </div>
+          {/each}
+        </div>
+        <p class={["font-extrabold", "text-xl", "px-1", "text-center"]}>
+          Thank you to the team for making this project happen!
+        </p>
       </div>
-      <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-        Thank you to the team for making this project happen!
-      </p>
+
+      <div
+        class={["absolute", "top-0.5", "left-0.5"]}
+        style:transform="translate(-50%, -50%) rotate(-45deg)"
+      >
+        {@render tape1()}
+      </div>
+
+      <div
+        class={["absolute", "top-0.5", "right-0.5"]}
+        style:transform="translate(50%, -50%) rotate(45deg)"
+      >
+        {@render tape2()}
+      </div>
     </div>
   </div>
 </main>
@@ -886,6 +959,10 @@
     color: var(--text-color-p);
   }
 
+  a {
+    color: var(--text-color-a);
+  }
+
   :global(:root) {
     --bg-lines-height: 0.9px;
     --bg-lines-spacing: 20px;
@@ -894,6 +971,10 @@
     --bg-dots-spacing: 24px;
 
     --spacing: 2rem;
+  }
+
+  :global(hr) {
+    color: color-mix(in srgb, var(--bg-color-accent) 30%, transparent);
   }
 
   :global(:root:has(main.bg-lines), .bg-lines) {
@@ -987,9 +1068,5 @@
         transparent 5px,
         var(--dark-20) 5px
       );
-  }
-
-  :global(hr) {
-    color: color-mix(in srgb, var(--bg-color-accent) 30%, transparent);
   }
 </style>
