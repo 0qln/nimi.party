@@ -17,6 +17,7 @@
     type PlushMetadata,
   } from "./plushie-gallery/types";
   import csv from "csvtojson";
+  import bgm from "$lib/assets/bgm/NN Anniv BGM Arr v1.wav";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -101,6 +102,7 @@
   }
 
   import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
+  import AudioControl from "./bgm/AudioControl.svelte";
   const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
 
   async function fetchThumbnail(
@@ -933,6 +935,8 @@
       </div>
     </div>
   </div>
+
+  <AudioControl src={bgm} />
 </main>
 
 <style>
