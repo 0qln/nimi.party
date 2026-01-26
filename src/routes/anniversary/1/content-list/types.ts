@@ -23,6 +23,7 @@ export interface TimelineEventProps {
   contentWidth?: string;
   titleWidth?: string;
   height?: string;
+  maxHeight?: string;
   direction?: "down" | "right" | "left" | "up";
   onHeaderResize?: (e: CustomEvent) => void;
 }
