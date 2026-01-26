@@ -372,22 +372,32 @@
       (problem = rects.find((x) => doRectsIntersect(x, node))) &&
       (intersect = getRectIntersection(problem, node))
     ) {
+      switch (direction) {
+        case "above":
+          const problemIsAbove = problem.y < node.y;
+          if (problemIsAbove) {
+            problem.y -= intersect.height + margin;
+          } else {
+            node.y -= intersect.height + margin;
+          }
+          break;
+        case "below":
+          const problemIsBelow = problem.y > node.y;
+          if (problemIsBelow) {
+            problem.y += intersect.height + margin;
+          } else {
+            node.y += intersect.height + margin;
+          }
+          break;
+        default:
+          throw new Error("not implemented");
+      }
+      // make sure that the node is not covering the problem's branch
       const branchLeftEdge = node.x + node.width / 2 - branchLenX;
       const problemRightEdge = problem.x + problem.width;
       const problemBranchCollision = problemRightEdge - branchLeftEdge;
       if (problemBranchCollision > 0) {
         problem.x -= problemBranchCollision + margin;
-      }
-
-      switch (direction) {
-        case "above":
-          node.y -= intersect.height + margin;
-          break;
-        case "below":
-          node.y += intersect.height + margin;
-          break;
-        default:
-          throw new Error("not implemented");
       }
     }
 
@@ -804,6 +814,7 @@
       >
         <node.component
           bind:this={node.ref}
+          maxHeight="{containerHeight / 2}px"
           onHeaderResize={(_v: any) => {
             requestAnimationFrame(() => {
               drawTimeline({

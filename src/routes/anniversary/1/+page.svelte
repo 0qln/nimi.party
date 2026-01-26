@@ -12,7 +12,11 @@
   import TwigBorder from "./frame/TwigBorder.svelte";
   import BlossomBorder from "./frame/BlossomBorder.svelte";
   import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
-  import { PlushyPhotoDatum } from "./plushie-gallery/types";
+  import {
+    PlushyPhotoDatum,
+    type PlushMetadata,
+  } from "./plushie-gallery/types";
+  import csv from "csvtojson";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -30,21 +34,74 @@
     },
   });
 
-  const plushyPhotos = Object.entries(plushyModules).map(
-    async ([_path, modFuture]: any) => {
-      const mod: any = await modFuture();
-      return mod?.default;
-    },
-  );
+  async function parsePlushCSV(csvData: string): Promise<PlushMetadata[]> {
+    // We manually define headers to map the CSV columns to our clean interface keys.
+    // This array must match the column order in your CSV exactly.
+    const headers = [
+      "timestamp",
+      "emailAddress",
+      "country",
+      "message",
+      "nickname",
+      "socialAccount",
+      "secondaryEmail",
+      "photoFilename",
+      "isImageAssetMade",
+    ];
 
-  const plushyComponents = plushyPhotos.map((photo) => {
+    const converter = csv({
+      noheader: false,
+      headers: headers,
+      output: "json",
+      checkType: false,
+      colParser: {
+        isImageAssetMade: (item: string) => item?.toUpperCase() === "TRUE",
+      },
+    });
+
+    return (await converter.fromString(csvData)) as PlushMetadata[];
+  }
+
+  import plushyCsv from "$lib/assets/plushie-gallery/meta/plush-Photos_form-responses.csv?raw";
+  const plushyResponses = await parsePlushCSV(plushyCsv);
+  const sanitize = (x: string) => x.replace(/'/g, "_");
+  const findPlushyMeta = (imageUrl: string) => {
+    return plushyResponses.find((x) =>
+      imageUrl.includes(sanitize(x.photoFilename)),
+    );
+  };
+
+  const unpackModule = async (modFuture: any) => {
+    const mod: any = await modFuture();
+    return mod?.default;
+  };
+
+  const plushyPhotos = Object.keys(plushyModules).map((path) => {
+    return {
+      path,
+      mod: unpackModule(plushyModules[path]),
+    };
+  });
+
+  const plushyComponents = plushyPhotos.map(({ path, mod }) => {
     return new PlushyPhotoDatum({
       component: PlushyPhoto,
       props: {
-        imageUrl: photo,
+        imageUrl: mod,
+        path: path,
+        meta: findPlushyMeta(path),
       },
     });
   });
+
+  interface Volunteer {
+    role: string;
+    name: string;
+    link?: string;
+  }
+
+  import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
+  const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
 
   async function fetchThumbnail(
     date: string,
@@ -211,7 +268,7 @@
       "2025-08-25",
       "[SKYBLOCK MINECRAFT] On a Monday??? | Day 3",
       `
-
+        Minecraft? On a Monday??? New texture pack locked and loaded, Nimi advocates from the Mizuno Craft aesthetic. EMBRACE THE COTTAGECORE AESTHETIC. Basically, according to our gaming tapir, the ability to install Minecraft texture packs is the tech literacy litmus test. While the Nether reached and the mob farm humming, Nimi turns her attention back to building her cozy Skyblock cottage with a real nice view of Party City.
       `,
     ),
     tsEventNode(
@@ -463,21 +520,169 @@
   <title>Nimi 1st Anniversary</title>
 </svelte:head>
 
+{#snippet tape1()}
+  <enhanced:img
+    src="$lib/assets/frame/tape-1.png"
+    sizes="200px"
+    alt=""
+    style:width="{90}px"
+    style:opacity="80%"
+  />
+{/snippet}
+
+{#snippet tape2()}
+  <enhanced:img
+    src="$lib/assets/frame/tape-2.png"
+    sizes="200px"
+    alt=""
+    style:width="{90}px"
+    style:opacity="80%"
+  />
+{/snippet}
+
+{#snippet pinRight()}
+  <enhanced:img
+    src="$lib/assets/frame/pin-right.png"
+    sizes="100px"
+    alt=""
+    style:width="{50}px"
+  />
+{/snippet}
+
+{#snippet pinLeft()}
+  <enhanced:img
+    src="$lib/assets/frame/pin-left.png"
+    sizes="100px"
+    alt=""
+    style:width="{50}px"
+  />
+{/snippet}
+
 <main class={["bg-tartan"]}>
   <div
+    id="home-section"
     class={[
       "max-w-screen",
       "items-center",
       "flex",
       "flex-col",
       "space-y-1",
-      "mt-1",
       "mx-auto",
+      "pb-2",
+      "pm-2",
     ]}
   >
-    <h1 class={["text-8xl", "underline", "text-center"]}>Happy Nimiversary!</h1>
+    <h1
+      id="home-header"
+      class={["text-8xl", "underline", "text-center", "z-10"]}
+    >
+      Happy Nimiversary!
+    </h1>
 
-    <hr />
+    <div
+      class={[
+        "flex",
+        "flex-row",
+        "flex-wrap",
+        "items-center",
+        "justify-center",
+        "w-full",
+        "pacifico-regular",
+        "space-x-2",
+        "h-1.5",
+      ]}
+    >
+      <div class={["relative"]}>
+        <enhanced:img
+          src="$lib/assets/misc/note-rounded-blue.png"
+          style:width="230px"
+          style:transform="translate(0, -10%)"
+        />
+        <a
+          class={[
+            "absolute",
+            "hover:underline",
+            "text-2xl",
+            "z-10",
+            "w-full",
+            "left-0",
+            "right-0",
+            "text-center",
+            "top-1/2",
+          ]}
+          style:transform="translate(0, -50%)"
+          href="#home-section">Home</a
+        >
+      </div>
+      <div class={["relative"]}>
+        <enhanced:img
+          src="$lib/assets/misc/note-rounded-yellow.png"
+          style:width="230px"
+          style:transform="translate(0, -10%)"
+        />
+        <a
+          class={[
+            "absolute",
+            "hover:underline",
+            "text-2xl",
+            "z-10",
+            "w-full",
+            "left-0",
+            "right-0",
+            "text-center",
+            "top-1/2",
+          ]}
+          style:transform="translate(0, -50%)"
+          href="#timeline-section">Timeline</a
+        >
+      </div>
+      <div class={["relative"]}>
+        <enhanced:img
+          src="$lib/assets/misc/note-rounded-pink.png"
+          style:width="230px"
+          style:transform="translate(0, -10%)"
+        />
+        <a
+          class={[
+            "absolute",
+            "hover:underline",
+            "text-2xl",
+            "z-10",
+            "w-full",
+            "left-0",
+            "right-0",
+            "text-center",
+            "top-1/2",
+          ]}
+          style:transform="translate(0, -50%)"
+          href="#plushy-section">Hello Nimi!</a
+        >
+      </div>
+      <div class={["relative"]}>
+        <enhanced:img
+          src="$lib/assets/misc/note-rounded-blue.png"
+          style:width="230px"
+          style:transform="translate(0, -10%)"
+        />
+        <a
+          class={[
+            "absolute",
+            "hover:underline",
+            "text-2xl",
+            "z-10",
+            "w-full",
+            "left-0",
+            "right-0",
+            "text-center",
+            "top-1/2",
+          ]}
+          style:transform="translate(0, -50%)"
+          href="#credits-section">Project Credits</a
+        >
+      </div>
+    </div>
+
+    <hr class={["my-0.5"]} />
 
     <div
       style:--bg-lines-spacing={"1.8em"}
@@ -494,7 +699,8 @@
       <div class={["flex", "flex-col", "space-y-1"]}>
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
           From many Naplings across North America and around the world, we wish
-          Nimi a happy 1 year anniversary. Thank you for being here with us! 💚
+          Nimi Nightmare a happy 1 year anniversary, thank you for being here
+          with us 💚
         </p>
 
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
@@ -504,32 +710,22 @@
         </p>
       </div>
 
-      {#snippet tape()}
-        <enhanced:img
-          src="$lib/assets/frame/paper-tape-horizontal.png?w=100"
-          sizes="100px"
-          alt=""
-          style:width="{90}px"
-          style:opacity="80%"
-        />
-      {/snippet}
-
       <div
         class={["absolute", "top-0.5", "left-0.5"]}
         style:transform="translate(-50%, -50%) rotate(-45deg)"
       >
-        {@render tape()}
+        {@render tape1()}
       </div>
 
       <div
         class={["absolute", "top-0.5", "right-0.5"]}
         style:transform="translate(50%, -50%) rotate(45deg)"
       >
-        {@render tape()}
+        {@render tape2()}
       </div>
     </div>
 
-    <hr class={["my-1"]} />
+    <hr class={["my-3"]} />
 
     <div
       class={[
@@ -537,14 +733,59 @@
         "flex-col",
         "items-center",
         "justify-center",
-        "overflow-hidden",
         "px-3",
         "w-full",
       ]}
     >
-      <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
-        Nimi content timeline
-      </h2>
+      <div
+        id="timeline-section"
+        style:--bg-lines-spacing={"1.8em"}
+        class={[
+          "relative",
+          "max-w-3xl",
+          "mx-2",
+          "p-1",
+          "bg-lines",
+          "shadow-xl",
+          "rounded-4xl",
+          "flex",
+          "flex-col",
+          "overflow-visible",
+        ]}
+      >
+        <div class={["flex", "flex-col", "space-y-1"]}>
+          <h2
+            class={[
+              "text-4xl",
+              "-mt-0.5",
+              "text-center",
+              "pacifico-regular",
+              "underline",
+            ]}
+          >
+            Timeline
+          </h2>
+          <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+            Lots of things happened in the past year! Let’s look back at the
+            streams, events, and milestones Nimi has done!
+          </p>
+        </div>
+
+        <div
+          class={["absolute", "top-0", "left-1/4"]}
+          style:transform="translate(-50%, -50%) rotate(-5deg)"
+        >
+          {@render tape1()}
+        </div>
+
+        <div
+          class={["absolute", "top-0", "left-3/4"]}
+          style:transform="translate(-50%, -50%) rotate(5deg)"
+        >
+          {@render tape2()}
+        </div>
+      </div>
+
       <BlossomBorder clazz={["mt-3", "mb-2"]}>
         <TwigBorder>
           <HorizontalScroll clazz={["rounded-4xl", "shadow-xl", "bg-dots"]}>
@@ -554,36 +795,143 @@
       </BlossomBorder>
     </div>
 
-    <hr />
+    <hr class={["my-3"]} />
 
     <div
+      id="plushy-section"
       class={[
+        "relative",
         "flex",
         "flex-col",
         "items-center",
         "justify-center",
         "overflow-hidden",
         "mx-2",
+        "mt-3",
         "p-1",
-        "bg-lines",
+        "bg-dots",
         "shadow-xl",
         "rounded-4xl",
         "w-full",
         "max-w-6xl",
         "space-y-1",
+        "overflow-visible",
       ]}
     >
-      <h2 class={["text-4xl", "text-center", "pacifico-regular", "underline"]}>
-        Nimi Plushy Travel Photo Gallery
-      </h2>
+      <enhanced:img
+        src="$lib/assets/misc/hellonimi-header.png"
+        style:width="500px"
+        style:margin-top="-30%"
+      />
+      <p class={["font-medium", "text-2xl", "px-1", "text-center"]}>
+        Where have the Nimi plushies been? Thank you Naplings for taking her
+        around!
+      </p>
       <PlushyGallery data={plushyComponents} />
+
+      <!-- todo: y spacing fix -->
+      <div
+        class={["absolute", "top-1", "right-0"]}
+        style:transform="translate(-50%, -50%)"
+      >
+        {@render pinRight()}
+      </div>
+      <div
+        class={["absolute", "top-1", "left-1"]}
+        style:transform="translate(-50%, -50%)"
+      >
+        {@render pinLeft()}
+      </div>
     </div>
 
-    <hr />
+    <hr class={["my-3"]} />
 
-    <h3>Closing words</h3>
-    <h3>Credits</h3>
-    <h3>Socials</h3>
+    <div
+      id="credits-section"
+      style:--bg-lines-spacing={"var(--spacing)"}
+      class={[
+        "relative",
+        "max-w-5xl",
+        "mx-2",
+        "p-1",
+        "bg-lines",
+        "shadow-xl",
+        "rounded-4xl",
+        "flex",
+        "flex-col",
+      ]}
+    >
+      <div class={["flex", "flex-col", "space-y-1"]}>
+        <h2
+          class={[
+            "text-4xl",
+            "-mt-0.5",
+            "text-center",
+            "pacifico-regular",
+            "underline",
+          ]}
+        >
+          Project Credits
+        </h2>
+        <div class={["grid", "grid-cols-2", "gap-x-1", "mt-0.5"]}>
+          {#each volunteers as volunteer}
+            <p
+              style:line-height={"var(--spacing)"}
+              class={["font-medium", "text-xl", "text-right", "text-end"]}
+            >
+              <span style:vertical-align="bottom">{volunteer.role}</span>
+            </p>
+            <div
+              style:height={"1.8em"}
+              class={["flex", "flex-row", "items-center", "space-x-0.5"]}
+            >
+              <p class={["font-medium", "text-xl"]}>
+                {volunteer.name}
+              </p>
+              {#if volunteer.link}
+                <a
+                  href={volunteer.link}
+                  target="_blank"
+                  aria-label="External link to volunteer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class={["size-0.5", "card-icon"]}
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+                    />
+                  </svg>
+                </a>
+              {/if}
+            </div>
+          {/each}
+        </div>
+        <p class={["font-extrabold", "text-xl", "px-1", "text-center"]}>
+          Thank you to the team for making this project happen!
+        </p>
+      </div>
+
+      <div
+        class={["absolute", "top-0.5", "left-0.5"]}
+        style:transform="translate(-50%, -50%) rotate(-45deg)"
+      >
+        {@render tape1()}
+      </div>
+
+      <div
+        class={["absolute", "top-0.5", "right-0.5"]}
+        style:transform="translate(50%, -50%) rotate(45deg)"
+      >
+        {@render tape2()}
+      </div>
+    </div>
   </div>
 </main>
 
@@ -603,6 +951,10 @@
     color: var(--text-color-p);
   }
 
+  a {
+    color: var(--text-color-a);
+  }
+
   :global(:root) {
     --bg-lines-height: 0.9px;
     --bg-lines-spacing: 20px;
@@ -613,6 +965,10 @@
     --spacing: 2rem;
   }
 
+  :global(hr) {
+    color: color-mix(in srgb, var(--bg-color-accent) 30%, transparent);
+  }
+
   :global(:root:has(main.bg-lines), .bg-lines) {
     background-color: var(--bg-color);
     opacity: 1;
@@ -621,8 +977,8 @@
       0deg,
       var(--bg-color-alt),
       var(--bg-color-alt) var(--bg-lines-height),
-      var(--bg-color) var(--bg-lines-height),
-      var(--bg-color)
+      var(--bg-color-paper) var(--bg-lines-height),
+      var(--bg-color-paper)
     );
   }
 
@@ -704,9 +1060,5 @@
         transparent 5px,
         var(--dark-20) 5px
       );
-  }
-
-  :global(hr) {
-    color: color-mix(in srgb, var(--bg-color-accent) 30%, transparent);
   }
 </style>

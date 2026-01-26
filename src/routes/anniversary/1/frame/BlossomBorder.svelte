@@ -9,8 +9,8 @@
 
 <TilingBorder
   size={{ width: 30, height: 30 }}
-  density={{ u: 0.3, v: 0.05 }}
-  uRandom={{ lo: -20, hi: 20 }}
+  density={{ u: 0.15, v: 0.05 }}
+  uRandom={{ lo: -40, hi: 40 }}
   vRandom={{ lo: -20, hi: 0 }}
   sprite={BlossomSprite}
   {...props}

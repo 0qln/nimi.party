@@ -14,6 +14,7 @@
     contentWidth = "",
     titleWidth = "",
     height = "",
+    maxHeight = "",
     direction = "down",
     onHeaderResize: onHeaderResize = undefined,
   }: TimelineEventProps = $props();
@@ -25,6 +26,9 @@
   );
   let cssTitleWidth = $derived(titleWidth || (isVertical ? "unset" : "200px"));
   let cssHeight = $derived(height || (isVertical ? "fit-content" : "230px"));
+  let cssMaxHeight = $derived(
+    maxHeight || (isVertical ? "fit-content" : "230px"),
+  );
 
   function dispatchHeaderResize(v: any) {
     if (!onHeaderResize) {
@@ -114,6 +118,7 @@
     : 'is-horizontal'}"
   style:--card-width={cssWidth}
   style:--card-height={cssHeight}
+  style:--card-max-height={cssMaxHeight}
   style:--content-width={cssContentWidth}
   style:--title-width={cssTitleWidth}
   role="article"
@@ -159,7 +164,7 @@
   .card-root {
     --transition-speed: 0.4s;
     --card-bg: var(--bg-color-dark);
-    --card-body-bg: var(--bg-color);
+    --card-body-bg: var(--bg-color-paper);
     --card-radius: 12px;
     --card-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -177,9 +182,13 @@
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
     transition: all var(--transition-speed) ease;
-    overflow: hidden;
+    overflow: auto;
     display: flex;
     border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .card-root.is-vertical {
+    max-height: var(--card-max-height);
   }
 
   .card-icon {

@@ -1,0 +1,10 @@
+[
+  { "role": "Project Lead", "name": "Admin R (Napling Project)" },
+  { "role": "Website Dev", "name": "oq_", "link": "https://github.com/0qln" },
+  {
+    "role": "Background Music",
+    "name": "JYS_music",
+    "link": "https://justinshinmusic.com"
+  },
+  { "role": "<project-volunteer>", "name": "<name>" }
+]
