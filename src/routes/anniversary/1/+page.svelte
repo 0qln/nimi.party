@@ -100,16 +100,8 @@
     link?: string;
   }
 
-  const volunteers: Array<Volunteer> = [
-    { role: "Project Lead", name: "Admin R (Napling Project)" },
-    { role: "Website Dev", name: "oq_", link: "https://github.com/0qln" },
-    {
-      role: "Background Music",
-      name: "JYS_music",
-      link: "https://justinshinmusic.com",
-    },
-    { role: "<project-volunteer>", name: "<name>" },
-  ];
+  import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
+  const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
 
   async function fetchThumbnail(
     date: string,
@@ -733,7 +725,7 @@
       </div>
     </div>
 
-    <hr class={["my-2"]} />
+    <hr class={["my-3"]} />
 
     <div
       class={[
@@ -803,7 +795,7 @@
       </BlossomBorder>
     </div>
 
-    <hr class={["my-1"]} />
+    <hr class={["my-3"]} />
 
     <div
       id="plushy-section"
@@ -852,7 +844,7 @@
       </div>
     </div>
 
-    <hr class={["my-1"]} />
+    <hr class={["my-3"]} />
 
     <div
       id="credits-section"
