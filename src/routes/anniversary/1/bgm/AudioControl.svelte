@@ -6,7 +6,7 @@
   let volume = $state(0.25);
   let playSession = $state(0);
 
-  let { src, autoplay = true }: AudioControlProps = $props();
+  let { src }: AudioControlProps = $props();
 
   function playMusic() {
     playSession += 1;
@@ -33,10 +33,6 @@
     } else {
       pauseMusic();
     }
-  }
-
-  if (autoplay) {
-    //onMount(() => setInterval(playMusic, 3000));
   }
 </script>
 
