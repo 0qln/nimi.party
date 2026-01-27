@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import type { AudioControlProps } from "./types";
 
   let audioRef: HTMLAudioElement;
@@ -46,6 +45,7 @@
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
+    style:margin-left="-4px"
     stroke-width="1.5"
     stroke="currentColor"
     class={["icon", "size-1"]}
@@ -63,6 +63,7 @@
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
+    style:margin-left="-4px"
     stroke-width="1.5"
     stroke="currentColor"
     class={["icon", "size-1"]}
@@ -87,53 +88,75 @@
     }
   }}
   onpause={() => (isPlaying = false)}
-  autoplay
 ></audio>
 
 <div
   class={[
     "fixed",
-    "bottom-1",
-    "right-1",
-    "flex",
-    "items-center",
-    "flex-col",
+    "bottom-0.5",
+    "right-0.5",
     "p-0.5",
     "rounded-xl",
     "bg-white/10",
-    "root",
     "overflow-visible",
-    "space-y-0.5",
+    "shadow-md/30",
   ]}
+  style:background-color="var(--bg)"
+  style:color="var(--text-color-bright)"
 >
-  <span class={["text-xl", "m-0"]}>BGM</span>
-  <button
-    onclick={toggleMusic}
+  <div
+    style:--spacing="1.6rem"
     class={[
-      "relative",
-      "rounded-lg",
+      "space-y-0.5",
       "flex",
       "items-center",
-      "cursor-pointer",
-      "font-bold",
+      "justify-center",
+      "flex-col",
     ]}
+    style:margin-right="6px"
   >
-    {#if isPlaying}
-      {@render iconPause()}
-    {:else}
-      {@render iconPlay()}
-    {/if}
-  </button>
-  <input
-    type="range"
-    min="0"
-    max="1"
-    step="0.01"
-    bind:value={volume}
-    title="Volume"
-    class={["w-2", "cursor-pointer"]}
-    style:height="4px"
+    <div class="flex flex-row items-center justify-between w-full">
+      <span class={["text-xl"]} style:line-height="var(--spacing)">BGM</span>
+      <span class={["text-xl text-center"]} style:line-height="var(--spacing)"
+        >~</span
+      >
+      <button
+        onclick={toggleMusic}
+        class={[
+          "relative",
+          "rounded-lg",
+          "flex",
+          "items-center",
+          "cursor-pointer",
+          "font-bold",
+        ]}
+      >
+        {#if isPlaying}
+          {@render iconPause()}
+        {:else}
+          {@render iconPlay()}
+        {/if}
+      </button>
+    </div>
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      bind:value={volume}
+      title="Volume"
+      class={["w-3.5", "cursor-pointer"]}
+    />
+  </div>
+
+  <enhanced:img
+    class="absolute top-1/2 -right-0.5 h-full overflow-visible pointer-events-none"
+    src="$lib/assets/misc/white-rose.png"
+    sizes="100px"
+    style:height="120%"
+    style:transform="translate(50%, -50%)"
   />
+
   <div
     class={[
       "notes",
@@ -151,18 +174,17 @@
 </div>
 
 <style>
-  .root {
-    background-color: var(--accent-color-darkgreen);
-    color: var(--text-color-bright);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  :root {
+    --bg: #688167;
+    --fg: #fcf7f1;
   }
 
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
-    --thumb-color: var(--accent-color-darkgreen);
+    --thumb-color: var(--bg);
     --thumb-outline-color: var(--track-color);
-    --track-color: #fff;
+    --track-color: var(--fg);
     --stroke-size: 2px;
   }
   input[type="range"]:focus {
@@ -194,6 +216,7 @@
     background: var(--thumb-color);
   }
   /* MS Styles (TODO) */
+  /*
   input[type="range"]::-ms-track {
     height: 10px;
     background: transparent;
@@ -214,10 +237,7 @@
     border-radius: 5px;
     background: #ffffff;
   }
-
-  .root > * {
-    padding: 0;
-  }
+  */
 
   button {
     transition: transform 0.1s;
@@ -233,10 +253,9 @@
 
   .notes {
     position: absolute;
-    display: relative; /* Note: display: relative is not valid CSS, but kept as requested */
-    right: 50%;
-    top: 0;
-    transition: opacity 1s ease-out; /* Smooth fade added here */
+    left: 80%;
+    top: -20%;
+    transition: opacity 1s ease-out;
   }
 
   .note-1,
@@ -245,7 +264,7 @@
   .note-4 {
     position: absolute;
     animation: notes 2s infinite linear;
-    font-size: 35px;
+    font-size: 25px;
     opacity: 0;
   }
 

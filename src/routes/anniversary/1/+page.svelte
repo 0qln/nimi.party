@@ -710,6 +710,11 @@
           Project. The website may not be 100% perfect but we hope Nimi and
           Naplings enjoy this little project.
         </p>
+
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          Please note that this website is optimized desktop browsers and might
+          not look right on mobile :)
+        </p>
       </div>
 
       <div
