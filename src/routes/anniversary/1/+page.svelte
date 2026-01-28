@@ -103,6 +103,7 @@
 
   import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
   import AudioControl from "./bgm/AudioControl.svelte";
+  import TapirSteps from "./misc/TapirSteps.svelte";
   const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
 
   async function fetchThumbnail(
@@ -571,6 +572,7 @@
       "space-y-1",
       "mx-auto",
       "pb-2",
+      "overflow-x-hidden",
     ]}
   >
     <h1
@@ -731,7 +733,7 @@
       </div>
     </div>
 
-    <hr class={["my-3"]} />
+    <TapirSteps count={7} />
 
     <div
       class={[
@@ -741,7 +743,7 @@
         "justify-center",
         "px-3",
         "w-full",
-        "overflow-hidden",
+        "overflow-y-visible",
       ]}
     >
       <div
@@ -802,7 +804,7 @@
       </BlossomBorder>
     </div>
 
-    <hr class={["my-3"]} />
+    <TapirSteps count={6} />
 
     <div
       id="plushy-section"
@@ -812,7 +814,6 @@
         "flex-col",
         "items-center",
         "justify-center",
-        "overflow-hidden",
         "mx-2",
         "mt-3",
         "p-1",
@@ -851,7 +852,7 @@
       </div>
     </div>
 
-    <hr class={["my-3"]} />
+    <TapirSteps count={7} />
 
     <div
       id="credits-section"
@@ -1069,5 +1070,13 @@
         transparent 5px,
         var(--dark-20) 5px
       );
+  }
+
+  :global(*:has(+ .tapir-path)) {
+    margin-bottom: 0;
+  }
+
+  :global(* + .tapir-path) {
+    margin-top: 0;
   }
 </style>
