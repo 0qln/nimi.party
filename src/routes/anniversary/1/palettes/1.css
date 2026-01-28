@@ -12,9 +12,9 @@
     --accent-color-darkblue: #017B9B;
     --accent-color-green: #6DAF5F;
     --accent-color-darkgreen: #03695E;
-    --text-outline-h1: 0px;
+    --text-outline-h1: 1px;
     --text-outline-color-h1: #A8BF68 ;
-    --text-color-h1: #254031 ;
+    --text-color-h1: #255041 ;
     --text-color-h2: color-mix(in srgb, var(--text-color-h1) 80%, transparent);
     --text-color-p: #444;
     --text-color-a: #888;
