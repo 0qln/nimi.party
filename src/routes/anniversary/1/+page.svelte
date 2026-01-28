@@ -712,8 +712,8 @@
         </p>
 
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
-          Please note that this website is optimized desktop browsers and might
-          not look right on mobile :)
+          Please note that this website is for optimized desktop browsers and
+          might not look as intended on mobile :)
         </p>
       </div>
 
