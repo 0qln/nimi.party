@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { TapirStepsProps } from "./types";
   import maskUrl from "$lib/assets/misc/tapir-hoof-print-0.png";
-  console.log(maskUrl);
 
   let {
     count = 10,
@@ -11,10 +11,20 @@
     dir = "down",
     color = "var(--bg-color-dark)",
   }: TapirStepsProps = $props();
+
+  let isLoaded = $state(false);
+
+  onMount(() => {
+    const img = new Image();
+    img.src = maskUrl;
+    img.onload = () => {
+      isLoaded = true;
+    };
+  });
 </script>
 
 <div
-  class="tapir-path"
+  class={["tapir-path", isLoaded && "loaded"]}
   style:--path-width="{pathWidth}px"
   style:--step-size="{size}px"
   style:--step-gap="{gap}px"
@@ -23,13 +33,13 @@
 >
   {#each Array(count) as _, i}
     <div class={["step-wrapper", i % 2 === 0 ? "left" : "right", dir]}>
-      <div class="hoof-print" role="img" aria-label="Tapir Step {i + 1}"></div>
-      <!-- <enhanced:img -->
-      <!--   src="$lib/assets/misc/tapir-hoof-print-0.png" -->
-      <!--   sizes="100px" -->
-      <!--   alt="Tapir Step {i + 1}" -->
-      <!--   class="hoof-print" -->
-      <!-- /> -->
+      <div class="reveal-wrapper" style:animation-delay="{i * 200}ms">
+        <div
+          class="hoof-print"
+          role="img"
+          aria-label="Tapir Step {i + 1}"
+        ></div>
+      </div>
     </div>
   {/each}
 </div>
@@ -50,6 +60,25 @@
     position: relative;
   }
 
+  .reveal-wrapper {
+    opacity: 0;
+  }
+
+  .tapir-path.loaded .reveal-wrapper {
+    animation: step-land 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+
+  @keyframes step-land {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .step-wrapper.left {
     justify-content: flex-start;
   }
@@ -64,11 +93,10 @@
 
   .hoof-print {
     width: var(--step-size);
+    height: var(--step-size);
     opacity: 0.85;
     filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.2));
     transition: transform 0.2s ease;
-
-    height: var(--step-size);
 
     background-color: var(--step-color);
 
