@@ -96,6 +96,7 @@
     "bg-white/10",
     "overflow-visible",
     "shadow-md/30",
+    "w-4.5",
   ]}
   style:background-color="var(--bg)"
   style:color="var(--text-color-bright)"
@@ -141,7 +142,7 @@
       step="0.01"
       bind:value={volume}
       title="Volume"
-      class={["w-3.5", "cursor-pointer"]}
+      class={["w-full", "cursor-pointer"]}
     />
   </div>
 
