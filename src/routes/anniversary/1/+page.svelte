@@ -571,7 +571,6 @@
       "space-y-1",
       "mx-auto",
       "pb-2",
-      "pm-2",
     ]}
   >
     <h1
@@ -742,6 +741,7 @@
         "justify-center",
         "px-3",
         "w-full",
+        "overflow-hidden",
       ]}
     >
       <div
