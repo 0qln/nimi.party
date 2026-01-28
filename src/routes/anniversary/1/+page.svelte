@@ -16,7 +16,7 @@
     PlushyPhotoDatum,
     type PlushMetadata,
   } from "./plushie-gallery/types";
-  import csv from "csvtojson";
+  import Papa from "papaparse";
   import bgm from "$lib/assets/bgm/NN Anniv BGM Arr v1.wav";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
@@ -36,8 +36,6 @@
   });
 
   async function parsePlushCSV(csvData: string): Promise<PlushMetadata[]> {
-    // We manually define headers to map the CSV columns to our clean interface keys.
-    // This array must match the column order in your CSV exactly.
     const headers = [
       "timestamp",
       "emailAddress",
@@ -50,17 +48,26 @@
       "isImageAssetMade",
     ];
 
-    const converter = csv({
-      noheader: false,
-      headers: headers,
-      output: "json",
-      checkType: false,
-      colParser: {
-        isImageAssetMade: (item: string) => item?.toUpperCase() === "TRUE",
-      },
+    const parseResult = Papa.parse(csvData, {
+      header: false,
+      skipEmptyLines: true,
     });
 
-    return (await converter.fromString(csvData)) as PlushMetadata[];
+    const rows = parseResult.data.slice(1) as string[][];
+
+    const metadata = rows.map((row) => {
+      const item: any = {};
+      headers.forEach((key, index) => {
+        item[key] = row[index];
+      });
+
+      const boolVal = item["isImageAssetMade"];
+      item["isImageAssetMade"] = boolVal?.toUpperCase() === "TRUE";
+
+      return item;
+    });
+
+    return metadata as PlushMetadata[];
   }
 
   import plushyCsv from "$lib/assets/plushie-gallery/meta/plush-Photos_form-responses.csv?raw";
