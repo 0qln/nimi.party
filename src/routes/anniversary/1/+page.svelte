@@ -571,7 +571,8 @@
       "flex-col",
       "space-y-1",
       "mx-auto",
-      "pb-2",
+      "pt-1",
+      "pb-3",
       "overflow-x-hidden",
     ]}
   >
@@ -592,7 +593,6 @@
         "w-full",
         "pacifico-regular",
         "space-x-2",
-        "h-1.5",
       ]}
     >
       <div class={["relative"]}>
@@ -807,7 +807,6 @@
     <TapirSteps count={6} />
 
     <div
-      id="plushy-section"
       class={[
         "relative",
         "flex",
@@ -827,6 +826,7 @@
       ]}
     >
       <enhanced:img
+        id="plushy-section"
         src="$lib/assets/misc/hellonimi-header.png"
         style:width="500px"
         style:margin-top="-30%"
