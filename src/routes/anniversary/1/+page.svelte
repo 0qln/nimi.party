@@ -748,9 +748,10 @@
         "flex-col",
         "items-center",
         "justify-center",
-        "px-3",
+        "px-2",
         "w-full",
         "overflow-y-visible",
+        "space-y-1",
       ]}
     >
       <div
@@ -802,13 +803,20 @@
         </div>
       </div>
 
-      <BlossomBorder clazz={["mt-3", "mb-2"]}>
-        <TwigBorder>
-          <HorizontalScroll clazz={["rounded-4xl", "shadow-xl", "bg-dots"]}>
-            <Timeline data={timelineNodes} orientation="horizontal" />
-          </HorizontalScroll>
-        </TwigBorder>
-      </BlossomBorder>
+      <div
+        class={[
+          "overflow-hidden",
+          "inline-flex",
+          "bg-dots",
+          "shadow-xl",
+          "rounded-4xl",
+          "w-full",
+        ]}
+      >
+        <HorizontalScroll clazz={["relative", "w-full"]}>
+          <Timeline data={timelineNodes} orientation="horizontal" />
+        </HorizontalScroll>
+      </div>
     </div>
 
     <TapirSteps count={6} />
