@@ -61,7 +61,6 @@
   .horizontal-scroll {
     display: inline-flex;
     gap: var(--gap);
-    width: max-content;
   }
 
   .horizontal-scroll > :global(*) {
