@@ -751,7 +751,7 @@
         "px-2",
         "w-full",
         "overflow-y-visible",
-        "space-y-1",
+        "space-y-2",
       ]}
     >
       <div
@@ -803,20 +803,24 @@
         </div>
       </div>
 
-      <div
-        class={[
-          "overflow-hidden",
-          "inline-flex",
-          "bg-dots",
-          "shadow-xl",
-          "rounded-4xl",
-          "w-full",
-        ]}
-      >
-        <HorizontalScroll clazz={["relative", "w-full"]}>
-          <Timeline data={timelineNodes} orientation="horizontal" />
-        </HorizontalScroll>
-      </div>
+      <BlossomBorder>
+        <TwigBorder>
+          <div
+            class={[
+              "overflow-hidden",
+              "inline-flex",
+              "bg-dots",
+              "shadow-xl",
+              "rounded-4xl",
+              "w-full",
+            ]}
+          >
+            <HorizontalScroll clazz={["relative", "w-full"]}>
+              <Timeline data={timelineNodes} orientation="horizontal" />
+            </HorizontalScroll>
+          </div>
+        </TwigBorder>
+      </BlossomBorder>
     </div>
 
     <TapirSteps count={6} />
