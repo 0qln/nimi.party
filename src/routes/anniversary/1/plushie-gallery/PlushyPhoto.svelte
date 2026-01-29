@@ -117,7 +117,9 @@
           {/if}</b
         >
 
-        <p class={["text-xs", "rinnet-regular"]}>{meta?.message}</p>
+        <p class={["text-xs", "rinnet-regular", "text-center"]}>
+          {meta?.message}
+        </p>
       </div>
     </div>
   </div>
