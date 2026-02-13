@@ -53,6 +53,7 @@
       props: {
         imageUrl: mod,
         path: path,
+        isPreformatted: true,
       },
     });
   });

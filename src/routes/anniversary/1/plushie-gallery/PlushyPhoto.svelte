@@ -7,6 +7,7 @@
   let {
     imageUrl = "",
     meta = undefined,
+    isPreformatted = false,
     rng = (_) => 0,
   }: PlushyPhotoProps = $props();
 
@@ -81,7 +82,7 @@
 
       <div
         class={[
-          "p-0.5",
+          !isPreformatted && "p-0.5",
           "flex",
           "flex-col",
           "items-center",
