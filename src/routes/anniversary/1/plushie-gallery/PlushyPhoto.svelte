@@ -7,6 +7,7 @@
   let {
     imageUrl = "",
     meta = undefined,
+    isPreformatted = false,
     rng = (_) => 0,
   }: PlushyPhotoProps = $props();
 
@@ -81,7 +82,7 @@
 
       <div
         class={[
-          "p-0.5",
+          !isPreformatted && "p-0.5",
           "flex",
           "flex-col",
           "items-center",
@@ -89,18 +90,20 @@
           "relative",
         ]}
       >
-        <div
-          class={["absolute", "top-0", "left-0"]}
-          style:rotate="{rng({ lo: -5, hi: -15 })}deg"
-          style:transform="translate(max(-30%, -50px), -30%)"
-        >
-          <p
-            class={["chewy-regular", "white-text-outline", "text-3xl"]}
-            style:color={`${randomFunFunColor()}`}
+        {#if meta?.country}
+          <div
+            class={["absolute", "top-0", "left-0"]}
+            style:rotate="{rng({ lo: -5, hi: -15 })}deg"
+            style:transform="translate(max(-30%, -50px), -30%)"
           >
-            {meta?.country}
-          </p>
-        </div>
+            <p
+              class={["chewy-regular", "white-text-outline", "text-3xl"]}
+              style:color={`${randomFunFunColor()}`}
+            >
+              {meta?.country}
+            </p>
+          </div>
+        {/if}
 
         <enhanced:img
           src={url}
@@ -110,16 +113,20 @@
           onload={() => (isLoaded = true)}
         />
 
-        <b class={["font-extrabold", "rinnet-regular"]}
-          >{meta?.nickname}
-          {#if meta?.socialAccount}
-            ({meta?.socialAccount})
-          {/if}</b
-        >
+        {#if meta?.nickname || meta?.socialAccount}
+          <b class={["font-extrabold", "rinnet-regular"]}>
+            {meta?.nickname}
+            {#if meta?.socialAccount}
+              ({meta?.socialAccount})
+            {/if}
+          </b>
+        {/if}
 
-        <p class={["text-xs", "rinnet-regular", "text-center"]}>
-          {meta?.message}
-        </p>
+        {#if meta?.message}
+          <p class={["text-xs", "rinnet-regular", "text-center"]}>
+            {meta?.message}
+          </p>
+        {/if}
       </div>
     </div>
   </div>

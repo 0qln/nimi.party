@@ -35,50 +35,6 @@
     },
   });
 
-  async function parsePlushCSV(csvData: string): Promise<PlushMetadata[]> {
-    const headers = [
-      "timestamp",
-      "emailAddress",
-      "country",
-      "message",
-      "nickname",
-      "socialAccount",
-      "secondaryEmail",
-      "photoFilename",
-      "isImageAssetMade",
-    ];
-
-    const parseResult = Papa.parse(csvData, {
-      header: false,
-      skipEmptyLines: true,
-    });
-
-    const rows = parseResult.data.slice(1) as string[][];
-
-    const metadata = rows.map((row) => {
-      const item: any = {};
-      headers.forEach((key, index) => {
-        item[key] = row[index];
-      });
-
-      const boolVal = item["isImageAssetMade"];
-      item["isImageAssetMade"] = boolVal?.toUpperCase() === "TRUE";
-
-      return item;
-    });
-
-    return metadata as PlushMetadata[];
-  }
-
-  import plushyCsv from "$lib/assets/plushie-gallery/meta/plush-Photos_form-responses.csv?raw";
-  const plushyResponses = await parsePlushCSV(plushyCsv);
-  const sanitize = (x: string) => x.replace(/'/g, "_");
-  const findPlushyMeta = (imageUrl: string) => {
-    return plushyResponses.find((x) =>
-      imageUrl.includes(sanitize(x.photoFilename)),
-    );
-  };
-
   const unpackModule = async (modFuture: any) => {
     const mod: any = await modFuture();
     return mod?.default;
@@ -97,7 +53,7 @@
       props: {
         imageUrl: mod,
         path: path,
-        meta: findPlushyMeta(path),
+        isPreformatted: true,
       },
     });
   });

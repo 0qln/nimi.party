@@ -17,6 +17,7 @@ export interface PlushyPhotoProps {
   imageUrl?: string | Promise<unknown>;
   path?: string;
   meta?: PlushMetadata;
+  isPreformatted?: boolean;
   rng?: (p: RngParams) => number;
 }
 
