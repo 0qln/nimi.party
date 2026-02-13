@@ -698,7 +698,7 @@
       style:--bg-lines-spacing={"1.8em"}
       class={[
         "relative",
-        "max-w-5xl",
+        "max-w-6xl",
         "mx-2",
         "p-1",
         "bg-lines",
