@@ -188,8 +188,6 @@
     return new TimelineSkip();
   }
 
-  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
   const timelineNodes: TimelineDatum[] = streamData
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .reduce((nodes, event, index, array) => {
@@ -197,7 +195,8 @@
       if (index > 0) {
         const prevDate = new Date(array[index - 1].date).getTime();
         const currDate = new Date(event.date).getTime();
-        if (Math.abs(currDate - prevDate) > ONE_WEEK_MS) {
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        if (Math.abs(currDate - prevDate) >= 6 * DAY_MS) {
           nodes.push(tsSkipNode());
         }
       }

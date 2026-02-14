@@ -858,6 +858,7 @@
     height: 100%;
     min-height: 80vh;
     overflow: visible;
+    margin-right: 150px;
   }
 
   .timeline-main,
