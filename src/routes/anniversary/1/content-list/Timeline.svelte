@@ -453,12 +453,38 @@
       dims.width = Math.max(contentWidth(), containerWidth);
 
       if (dims.width != 0 && dims.height != 0) {
-        requestAnimationFrame(() => {
-          drawTimeline(dims);
-        });
+        scheduleDraw();
       }
     });
   });
+
+  let isDrawing = false;
+  let redrawPending = false;
+  async function scheduleDraw() {
+    // 1. If we are already running, just flag that we need another run after this one.
+    // This effectively "queues" the LATEST request and discards intermediate ones.
+    if (isDrawing) {
+      redrawPending = true;
+      return;
+    }
+
+    // 2. Lock the process
+    isDrawing = true;
+
+    try {
+      // 3. Keep drawing as long as there is a pending request.
+      do {
+        redrawPending = false;
+        await drawTimeline({
+          width: containerWidth,
+          height: containerHeight,
+        });
+      } while (redrawPending);
+    } finally {
+      // 4. Release the lock only when we are totally caught up
+      isDrawing = false;
+    }
+  }
 
   async function drawTimeline(dims: TimelineDimensions) {
     if (!lineGroupRef || !branchesRef || !eventsRef || data.length === 0)
@@ -816,12 +842,7 @@
           bind:this={node.ref}
           maxHeight="{containerHeight / 2}px"
           onHeaderResize={(_v: any) => {
-            requestAnimationFrame(() => {
-              drawTimeline({
-                width: containerWidth,
-                height: containerHeight,
-              });
-            });
+            scheduleDraw();
           }}
           {...node.props}
         />
