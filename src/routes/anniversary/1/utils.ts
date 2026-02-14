@@ -33,3 +33,8 @@ export function pairs<T>(xs: Array<T>): Array<[T, T]> {
 export function isBetween(x: number, lo: number, hi: number): boolean {
   return x > lo && x < hi;
 }
+
+// convert "TRUE"/"FALSE" strings to actual booleans
+export function readGoogleSheetBoolean(x?: string): boolean {
+  return x?.toUpperCase() === "TRUE";
+}

@@ -3,6 +3,7 @@
   import {
     TimelineEvent,
     TimelineSkip,
+    type StreamMetadata,
     type TimelineDatum,
     type TimelineNodePosition,
   } from "./content-list/types";
@@ -12,10 +13,7 @@
   import TwigBorder from "./frame/TwigBorder.svelte";
   import BlossomBorder from "./frame/BlossomBorder.svelte";
   import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
-  import {
-    PlushyPhotoDatum,
-    type PlushMetadata,
-  } from "./plushie-gallery/types";
+  import { PlushyPhotoDatum } from "./plushie-gallery/types";
   import Papa from "papaparse";
   import bgm from "$lib/assets/bgm/NN Anniv BGM Arr v1.wav";
 
@@ -58,16 +56,63 @@
     });
   });
 
-  interface Volunteer {
-    role: string;
-    name: string;
-    link?: string;
-  }
-
   import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
   import AudioControl from "./bgm/AudioControl.svelte";
   import TapirSteps from "./misc/TapirSteps.svelte";
   const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
+
+  async function parseStreamCSV(csvData: string): Promise<StreamMetadata[]> {
+    // 0: STREAM/EVENT TITLE
+    // 1: DATE
+    // 2: Thumbnail Image
+    // 3: TYPE
+    // 4: LOGGED?
+    // 5: ON WEBSITE?
+    // 6: LINK
+    const headers = [
+      "title",
+      "date",
+      "thumbnail",
+      "type",
+      "isLogged",
+      "isOnWebsite",
+      "link",
+    ];
+
+    const parseResult = Papa.parse(csvData, {
+      header: false,
+      skipEmptyLines: true, // data may contain empty rows
+    });
+
+    // remove the very first row (headers)
+    const rows = parseResult.data.slice(1) as string[][];
+
+    const metadata = rows
+      .map((row) => {
+        const item: any = {};
+
+        headers.forEach((key, index) => {
+          item[key] = row[index] ? row[index].trim() : "";
+        });
+
+        item["isLogged"] = readGoogleSheetBoolean(item["isLogged"]);
+        item["isOnWebsite"] = readGoogleSheetBoolean(item["isOnWebsite"]);
+
+        return item as StreamMetadata;
+      })
+
+      // The CSV has section dividers like "January Thumbnails..." or empty rows
+      // where date or type is missing... We filter these out.
+      .filter((item) => item.date !== "" && item.type !== "");
+
+    return metadata;
+  }
+
+  import streamCsv from "$lib/assets/NIMI_CONTENT.csv?raw";
+  import { readGoogleSheetBoolean } from "./utils";
+  import type { Volunteer } from "./types";
+  const streamData = await parseStreamCSV(streamCsv);
+  console.log(streamData);
 
   async function fetchThumbnail(
     date: string,

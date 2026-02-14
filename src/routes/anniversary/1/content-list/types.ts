@@ -1,5 +1,15 @@
 import type { Component } from "svelte";
 
+export interface StreamMetadata {
+  title: string;
+  date: string;
+  thumbnail: string;
+  type: string;
+  isLogged: boolean;
+  isOnWebsite: boolean;
+  link: string;
+}
+
 export type TimelineData = Array<TimelineDatum>;
 
 export type TimelineDatum = TimelineSkip | TimelineEvent;
