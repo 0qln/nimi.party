@@ -16,6 +16,7 @@
     height = "",
     maxHeight = "",
     direction = "down",
+    accentColor = "var(--accent-color)",
     onHeaderResize: onHeaderResize = undefined,
   }: TimelineEventProps = $props();
 
@@ -121,6 +122,7 @@
   style:--card-max-height={cssMaxHeight}
   style:--content-width={cssContentWidth}
   style:--title-width={cssTitleWidth}
+  style:--card-accent-color={accentColor}
   role="article"
   aria-label={`Card: ${title}`}
 >
@@ -133,7 +135,9 @@
     bind:borderBoxSize={null, (v) => dispatchHeaderResize(v)}
     bind:this={headerRef}
   >
-    {@render tImage()}
+    {#if image}
+      {@render tImage()}
+    {/if}
     {@render tHeader()}
   </div>
 
@@ -209,7 +213,7 @@
   /* --- ACCENT BAR --- */
   .accent-bar {
     position: absolute;
-    background-color: var(--accent-color);
+    background-color: var(--card-accent-color);
     transition: all var(--transition-speed) ease;
   }
 

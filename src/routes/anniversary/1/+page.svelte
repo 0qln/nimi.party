@@ -174,6 +174,10 @@
         imageUrl: thumbnail,
         externalLink: row.link,
         width: "350px",
+        accentColor:
+          row.type === "Stream"
+            ? "var(--accent-color)"
+            : "var(--accent-color-pink)",
       },
       position,
       expansion: "inside",
