@@ -287,7 +287,6 @@
   }
   .is-vertical .card-media {
     flex-shrink: 1;
-    /* Optional: Limit image width in vertical mode if needed, usually managed by flex */
   }
   .is-vertical .card-header-wrapper {
     flex: 2 1 auto;
