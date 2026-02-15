@@ -24,7 +24,7 @@ export class TimelineSkip {
 }
 
 export interface TimelineEventProps {
-  title?: string;
+  title?: string[];
   subtitle?: string;
   content?: string;
   imageUrl?: string | Promise<string | undefined>;

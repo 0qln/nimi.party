@@ -151,6 +151,14 @@
     return [linkId(link), dateId(date)].filter((x) => x).join("_");
   }
 
+  function partitionTitle(title: string): string[] {
+    if (title.includes("【") && title.includes("】")) {
+      const split = title.indexOf("】") + 1;
+      return [title.slice(0, split), title.slice(split)];
+    }
+    return [title];
+  }
+
   let currPosition: TimelineNodePosition = "above";
   function tsEventNode(
     row: StreamMetadata,
@@ -164,13 +172,14 @@
     const thumbnail = row.thumbnail && fetchThumbnail(row.thumbnail);
     const dateObj = new Date(row.date);
     const id = eventId(row.link, dateObj);
+    const title = partitionTitle(row.title);
 
     return new TimelineEvent({
       id,
       date: dateObj,
       component: SimpleCardNode,
       props: {
-        title: row.title,
+        title,
         subtitle: dateObj.toLocaleDateString(),
         imageUrl: thumbnail,
         externalLink: row.link,

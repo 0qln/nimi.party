@@ -3,9 +3,10 @@
 <script lang="ts">
   import { select } from "d3-selection";
   import type { TimelineEventProps } from "../types";
+  import FluidText from "../../misc/FluidText.svelte";
 
   let {
-    title = "",
+    title = [],
     subtitle = "",
     imageUrl: image = "",
     externalLink = undefined,
@@ -33,7 +34,7 @@
 {#snippet tImage()}
   {#if typeof image === "string"}
     <div class="card-media">
-      <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
+      <enhanced:img src={image} sizes="400px" loading="lazy" />
     </div>
   {:else if image instanceof Promise}
     {#await image then image}
@@ -46,7 +47,6 @@
           <enhanced:img
             src={image}
             sizes="400px"
-            alt={title}
             loading="lazy"
             onload={() => (isImageLoaded = true)}
           />
@@ -57,8 +57,12 @@
 {/snippet}
 
 {#snippet tHeader()}
-  <div class="card-header-wrapper">
-    <h3 class="card-title delius-regular">{title}</h3>
+  <FluidText class="card-header-wrapper">
+    <h3 class="card-title delius-regular">
+      {#each title as line}
+        {line} <br />
+      {/each}
+    </h3>
     {#if subtitle}
       <div
         class={["flex", "flex-row", "items-center", "mt-0.25", "space-x-0.25"]}
@@ -67,7 +71,7 @@
         <p class={["card-subtitle", "m-0!"]}>{subtitle}</p>
       </div>
     {/if}
-  </div>
+  </FluidText>
 {/snippet}
 
 {#snippet tExternalLink()}
@@ -149,20 +153,17 @@
 
     position: relative;
     background: var(--card-bg);
-    width: var(--card-width);
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
     transition: all var(--transition-speed) ease;
-    overflow: auto;
+    overflow: hidden;
     display: flex;
     border: 1px solid rgba(0, 0, 0, 0.05);
 
-    max-height: 200px;
+    min-width: 200px;
     max-width: 400px;
-  }
-
-  .card-root {
-    max-height: var(--card-max-height);
+    max-height: 150px;
+    min-height: 100px;
   }
 
   .card-icon {
@@ -191,21 +192,24 @@
     top: 0;
     left: 0;
     right: 0;
-    width: 4px;
+    height: 4px;
   }
 
   /* --- HEAD SECTION LAYOUTS --- */
   .card-head {
     display: flex;
     flex-direction: row;
-    flex-shrink: 0;
-    width: 100%;
   }
   .card-media {
-    flex-shrink: 1;
+    flex-grow: 1;
+    flex-basis: auto;
+    flex-shrink: 2;
   }
-  .card-header-wrapper {
-    flex: 2 1 auto;
+  :global(.card-header-wrapper) {
+    height: 100%;
+    flex-grow: 2;
+    flex-shrink: 0;
+    flex-basis: min-content;
     padding: 1rem;
     display: flex;
     flex-direction: column;
