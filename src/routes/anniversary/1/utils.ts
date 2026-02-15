@@ -33,3 +33,29 @@ export function pairs<T>(xs: Array<T>): Array<[T, T]> {
 export function isBetween(x: number, lo: number, hi: number): boolean {
   return x > lo && x < hi;
 }
+
+// convert "TRUE"/"FALSE" strings to actual booleans
+export function readGoogleSheetBoolean(x?: string): boolean {
+  return x?.toUpperCase() === "TRUE";
+}
+
+export function extractGoogleDriveId(url: string): string | null {
+  const patterns: RegExp[] = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /id=([a-zA-Z0-9_-]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+export async function unpackModule(modFuture: () => Promise<any>) {
+  const mod: any = await modFuture();
+  return mod?.default;
+}

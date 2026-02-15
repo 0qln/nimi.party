@@ -16,8 +16,12 @@
     height = "",
     maxHeight = "",
     direction = "down",
+    animate = true,
+    accentColor = "var(--accent-color)",
     onHeaderResize: onHeaderResize = undefined,
   }: TimelineEventProps = $props();
+
+  let isImageLoaded = $state(false);
 
   let isVertical = $derived(direction === "down" || direction === "up");
   let cssWidth = $derived(width || (isVertical ? "400px" : "unset"));
@@ -52,8 +56,18 @@
   {:else if image instanceof Promise}
     {#await image then image}
       {#if image}
-        <div class="card-media">
-          <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
+        <div
+          class="card-media"
+          style:width={isImageLoaded || !animate ? "100%" : "0%"}
+          style:transition="width 0.3s, height 0.3s"
+        >
+          <enhanced:img
+            src={image}
+            sizes="400px"
+            alt={title}
+            loading="lazy"
+            onload={() => (isImageLoaded = true)}
+          />
         </div>
       {/if}
     {/await}
@@ -121,6 +135,7 @@
   style:--card-max-height={cssMaxHeight}
   style:--content-width={cssContentWidth}
   style:--title-width={cssTitleWidth}
+  style:--card-accent-color={accentColor}
   role="article"
   aria-label={`Card: ${title}`}
 >
@@ -133,7 +148,9 @@
     bind:borderBoxSize={null, (v) => dispatchHeaderResize(v)}
     bind:this={headerRef}
   >
-    {@render tImage()}
+    {#if image}
+      {@render tImage()}
+    {/if}
     {@render tHeader()}
   </div>
 
@@ -209,7 +226,7 @@
   /* --- ACCENT BAR --- */
   .accent-bar {
     position: absolute;
-    background-color: var(--accent-color);
+    background-color: var(--card-accent-color);
     transition: all var(--transition-speed) ease;
   }
 
@@ -270,7 +287,6 @@
   }
   .is-vertical .card-media {
     flex-shrink: 1;
-    /* Optional: Limit image width in vertical mode if needed, usually managed by flex */
   }
   .is-vertical .card-header-wrapper {
     flex: 2 1 auto;

@@ -21,7 +21,12 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               nodejs_25
-              python3
+              (pkgs.python3.withPackages (p:
+                with p; [
+                  google-api-python-client
+                  google-auth-httplib2
+                  google-auth-oauthlib
+                ]))
             ];
           };
         };

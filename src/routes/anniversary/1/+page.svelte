@@ -3,6 +3,7 @@
   import {
     TimelineEvent,
     TimelineSkip,
+    type StreamMetadata,
     type TimelineDatum,
     type TimelineNodePosition,
   } from "./content-list/types";
@@ -12,21 +13,32 @@
   import TwigBorder from "./frame/TwigBorder.svelte";
   import BlossomBorder from "./frame/BlossomBorder.svelte";
   import PlushyPhoto from "./plushie-gallery/PlushyPhoto.svelte";
-  import {
-    PlushyPhotoDatum,
-    type PlushMetadata,
-  } from "./plushie-gallery/types";
+  import { PlushyPhotoDatum } from "./plushie-gallery/types";
+  import AudioControl from "./bgm/AudioControl.svelte";
+  import TapirSteps from "./misc/TapirSteps.svelte";
   import Papa from "papaparse";
   import bgm from "$lib/assets/bgm/NN Anniv BGM Arr v1.wav";
+  import {
+    extractGoogleDriveId,
+    readGoogleSheetBoolean,
+    unpackModule,
+  } from "./utils";
+  import type { Volunteer } from "./types";
+  import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
+  import streamCsv from "$lib/assets/content-list/NIMI_CONTENT.csv?raw";
+  import SimpleCardNode from "./content-list/templates/SimpleCardNode.svelte";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
-  const thumbnailModules = import.meta.glob("$lib/assets/content-list/**/*", {
-    query: {
-      enhanced: true,
-      w: "1280;640;400",
+  const thumbnailModules = import.meta.glob(
+    "$lib/assets/content-list/thumbnails/*",
+    {
+      query: {
+        enhanced: true,
+        w: "1280;640;400",
+      },
     },
-  });
+  );
 
   const plushyModules = import.meta.glob("$lib/assets/plushie-gallery/*", {
     query: {
@@ -34,11 +46,6 @@
       w: "1280;640;400",
     },
   });
-
-  const unpackModule = async (modFuture: any) => {
-    const mod: any = await modFuture();
-    return mod?.default;
-  };
 
   const plushyPhotos = Object.keys(plushyModules).map((path) => {
     return {
@@ -58,66 +65,129 @@
     });
   });
 
-  interface Volunteer {
-    role: string;
-    name: string;
-    link?: string;
-  }
-
-  import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
-  import AudioControl from "./bgm/AudioControl.svelte";
-  import TapirSteps from "./misc/TapirSteps.svelte";
   const volunteers: Array<Volunteer> = JSON.parse(volunteersRaw);
 
-  async function fetchThumbnail(
-    date: string,
-    imageName: string,
-  ): Promise<string | undefined> {
-    const thumbnailPath = `/src/lib/assets/content-list/${date}/${imageName}`;
-    const thumbnailModule = thumbnailModules[thumbnailPath];
-    if (thumbnailModule) {
-      const module: any = await thumbnailModule();
-      return module?.default;
-    }
+  async function parseStreamCSV(csvData: string): Promise<StreamMetadata[]> {
+    // 0: STREAM/EVENT TITLE
+    // 1: DATE
+    // 2: Thumbnail Image
+    // 3: TYPE
+    // 4: LOGGED?
+    // 5: ON WEBSITE?
+    // 6: LINK
+    const headers = [
+      "title",
+      "date",
+      "thumbnail",
+      "type",
+      "isLogged",
+      "isOnWebsite",
+      "link",
+    ];
+
+    const parseResult = Papa.parse(csvData, {
+      header: false,
+      skipEmptyLines: true, // data may contain empty rows
+    });
+
+    // remove the very first row (headers)
+    const rows = parseResult.data.slice(1) as string[][];
+
+    const metadata = rows
+      .map((row) => {
+        const item: any = {};
+
+        headers.forEach((key, index) => {
+          item[key] = row[index] ? row[index].trim() : "";
+        });
+
+        item["isLogged"] = readGoogleSheetBoolean(item["isLogged"]);
+        item["isOnWebsite"] = readGoogleSheetBoolean(item["isOnWebsite"]);
+
+        return item as StreamMetadata;
+      })
+
+      // The CSV has section dividers like "January Thumbnails..." or empty rows
+      // where date or type is missing... We filter these out.
+      .filter((item) => item.date !== "" && item.type !== "");
+
+    return metadata;
+  }
+
+  const streamData = await parseStreamCSV(streamCsv);
+
+  async function fetchThumbnail(url: string): Promise<string | undefined> {
+    const findThumbnail = (id: string) => {
+      return Object.entries(thumbnailModules).find(([k, _]) => k.includes(id));
+    };
+    const id = extractGoogleDriveId(url);
+    const mod = id && findThumbnail(id);
+    return mod && unpackModule(mod[1]);
   }
 
   function switchPosition(pos: TimelineNodePosition): TimelineNodePosition {
     return pos === "above" ? "below" : "above";
   }
 
+  function eventId(link: string, date: Date): string {
+    function linkId(link: string): string | null {
+      const patterns = [/watch\?v=([a-zA-Z0-9_-]+)/];
+
+      for (const pattern of patterns) {
+        const match = link.match(pattern);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+
+      return null;
+    }
+
+    function dateId(date: Date): string {
+      const dateIso = date.toISOString().split("T")[0];
+      return dateIso;
+    }
+
+    return [linkId(link), dateId(date)].filter((x) => x).join("_");
+  }
+
+  function partitionTitle(title: string): string[] {
+    if (title.includes("【") && title.includes("】")) {
+      const split = title.indexOf("】") + 1;
+      return [title.slice(0, split), title.slice(split)];
+    }
+    return [title];
+  }
+
   let currPosition: TimelineNodePosition = "above";
   function tsEventNode(
-    date: string,
-    title: string,
+    row: StreamMetadata,
     args: {
       position?: TimelineNodePosition;
-      externalLink?: string;
-      imageName?: string;
-      id?: string;
     } = {},
   ): TimelineEvent {
-    const {
-      position,
-      externalLink,
-      imageName = "thumbnail.jpg",
-      id = date,
-    } = args;
+    const { position } = args;
 
-    let image = imageName && fetchThumbnail(date, imageName);
     currPosition = position || switchPosition(currPosition);
-
-    const dateObj = new Date(date);
+    const thumbnail = row.thumbnail && fetchThumbnail(row.thumbnail);
+    const dateObj = new Date(row.date);
+    const id = eventId(row.link, dateObj);
+    const title = partitionTitle(row.title);
 
     return new TimelineEvent({
-      id: id,
+      id,
       date: dateObj,
-      component: CustomCardNode,
+      component: SimpleCardNode,
       props: {
         title,
         subtitle: dateObj.toLocaleDateString(),
-        imageUrl: image,
-        externalLink,
+        imageUrl: thumbnail,
+        externalLink: row.link,
         width: "350px",
+        accentColor:
+          row.type === "Stream"
+            ? "var(--accent-color)"
+            : "var(--accent-color-pink)",
       },
       position,
       expansion: "inside",
@@ -128,228 +198,24 @@
     return new TimelineSkip();
   }
 
-  const timelineNodes: TimelineDatum[] = [
-    // august
-    tsEventNode(
-      "2025-08-01",
-      "[3D OUTFIT REVEAL] Summer isn’t over yet! #BeachBaku",
-    ),
-    tsEventNode(
-      "2025-08-03",
-      "[Animal Revolt Battle Simulator] Determining once and for all who would win: 100 men or 1 t-rex ",
-    ),
-    tsEventNode(
-      "2025-08-06",
-      "[Crusader Kings III] I watched too much Game of Thrones so now I’m Playing CK3",
-    ),
-    tsEventNode(
-      "2025-08-08",
-      "[Static Dread] DON’T LET THEM IN Eldritch Horror + Paper, Please",
-    ),
-    tsEventNode(
-      "2025-08-09",
-      "[Crusader Kings III] Fixing the Game of Thrones timeline with the power of fatherly love",
-    ),
-    tsEventNode(
-      "2025-08-10",
-      "[RESIDENT EVIL 6] Green girls vs classic action horror WITH @mintfantome",
-    ),
-    tsEventNode(
-      "2025-08-11",
-      "[Wii Fit] Nimi gets fit with the Wii’s most ruthless fitness assistant",
-    ),
-    tsEventNode(
-      "2025-08-13",
-      "[Elden Ring] GETTING GOOD OR ELSE FOR REAL | #20",
-    ),
-    tsEventNode(
-      "2025-08-14",
-      "[RESIDENT EVIL 6] This game is ridiculous (and awesome) | #2",
-    ),
-    tsEventNode(
-      "2025-08-15",
-      "[Teddy’s Haven] Living out my dream of opening a fantasy shop",
-    ),
-    tsEventNode("2025-08-20", "[SKYBLOCK MINECRAFT] Day 1"),
-    tsEventNode(
-      "2025-08-21",
-      "[SKYBLOCK MINECRAFT] The one where Nimi makes a mob farm | Day 2",
-    ),
-    tsEventNode(
-      "2025-08-22",
-      "[Teddy’s Haven] This medieval shop simulator is my cozy GOTY",
-    ),
-    tsEventNode(
-      "2025-08-24",
-      "[The Life and Suffering of Sir Brante] Your choices decide his fate & his suffering",
-    ),
-    tsEventNode("2025-08-25", "[SKYBLOCK MINECRAFT] On a Monday??? | Day 3"),
-    tsEventNode("2025-08-27", "[Hollow Knight] Is this game hard?"),
-    tsEventNode(
-      "2025-08-28",
-      "[Hollow Knight] One Nimi tries to beat Hollow Knight before Silksong | #2",
-    ),
-    tsEventNode(
-      "2025-08-29",
-      "[Hollow Knight] When I close my eyes, all I see is Hollow Knight | #3",
-    ),
-    tsEventNode("2025-08-30", "[Hollow Knight] Please no more deepnest | #4"),
-    tsEventNode(
-      "2025-08-31",
-      "[Hollow Knight] The one where Nimi beat the game for real | #5",
-    ),
-    // september
-    tsEventNode(
-      "2025-09-01",
-      "【Hollow Knight】 The one where Nimi beats the game for real",
-      { externalLink: "https://youtu.be/rq7oYfJAMRw" },
-    ),
-    tsEventNode(
-      "2025-09-04",
-      "【SKYBLOCK MINECRAFT】 In my happy space",
+  const timelineNodes: TimelineDatum[] = streamData
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .reduce((nodes, event, index, array) => {
+      // insert time skips
+      if (index > 0) {
+        const prevDate = new Date(array[index - 1].date).getTime();
+        const currDate = new Date(event.date).getTime();
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        if (Math.abs(currDate - prevDate) >= 6 * DAY_MS) {
+          nodes.push(tsSkipNode());
+        }
+      }
 
-      { externalLink: "https://youtu.be/eQT4U2_rwWc" },
-    ),
-    tsEventNode(
-      "2025-09-05",
-      "Learning to be a mother from questionable Wii games",
+      // add the current event node
+      nodes.push(tsEventNode(event, {}));
 
-      { externalLink: "https://youtu.be/BlAkThwMZY0" },
-    ),
-    tsSkipNode(),
-    tsEventNode(
-      "2025-09-12",
-      "【KU100 ASMR】 ✂️ Spider Girl Sizes You Up 🕸️",
-
-      { externalLink: "https://youtu.be/d4Byvoh_Z0s" },
-    ),
-    tsEventNode("2025-09-13", "Nimi finds the go live button", {
-      externalLink: "https://youtu.be/fldbRmQ91Pk",
-    }),
-    tsEventNode(
-      "2025-09-14",
-      "【The Quarry】 Nimi controls the fate of nine teenagers (they are doomed)",
-      { externalLink: "https://youtu.be/dZwZ2LMItvw" },
-    ),
-    tsEventNode(
-      "2025-09-17",
-      " 【The Quarry】 I have a bad feeling about this | #2",
-
-      { externalLink: "https://youtu.be/FFPqDKcsLfk" },
-    ),
-    tsEventNode(
-      "2025-09-18",
-      "【Half Sword】 Medieval Combat Simulator but make it QWOP",
-
-      { externalLink: "https://youtu.be/HMry7BzvMig" },
-    ),
-    tsEventNode(
-      "2025-09-20",
-      "【The Wolf Among Us】 Making very good decisions in this classic Telltale Game",
-
-      { externalLink: "https://youtu.be/VIy7mIOW8p8" },
-    ),
-    tsEventNode(
-      "2025-09-22",
-      "【Sims 2】 Can I survive as a lone child in The Sims 2?",
-
-      { externalLink: "https://youtu.be/xeVuA5AziB8" },
-    ),
-    tsEventNode(
-      "2025-09-24",
-      " 【The Wolf Among Us】 We've got ourselves a murder mystery | #2",
-
-      { externalLink: "https://youtu.be/M0VtCrS9D0s" },
-    ),
-    tsEventNode(
-      "2025-09-25",
-      " 【The Wolf Among Us】 That's it, I'm sending everyone to the farm | FINALE",
-
-      { externalLink: "https://youtu.be/rD_WW200Aqg" },
-    ),
-    tsEventNode(
-      "2025-09-26",
-      " 【No, I'm Not a Human】 Your Neighbors are NOT what They Seem (Full Release)",
-
-      { externalLink: "https://youtu.be/8oFlHDVBYLs" },
-    ),
-    tsEventNode(
-      "2025-09-28",
-      " 【ELDEN RING: SHADOW OF THE ERDTREE】 DLC starts NOW! | #1",
-
-      { externalLink: "https://youtu.be/g8fdYvx3_mw" },
-    ),
-    tsEventNode(
-      "2025-09-29",
-      "【SKYBLOCK MINECRAFT】 0 days since last mob spawner incident",
-
-      { externalLink: "https://youtu.be/7meuhc4aPwk" },
-    ),
-    // october
-    tsEventNode(
-      "2025-10-01",
-      "10012025_forest.mp4",
-
-      { externalLink: "https://youtu.be/h-mlJwFKnSY" },
-    ),
-    tsEventNode(
-      "2025-10-03",
-      " 【MEGABONK】 Addictive new roguelite where you BONK",
-
-      { externalLink: "https://youtu.be/-9ofHHGZHWU" },
-    ),
-    tsSkipNode(),
-    tsEventNode(
-      "2025-10-08",
-      "【Unfair Flips】 Gambling with a coin that can only flip tails",
-
-      { externalLink: "https://youtu.be/MW3ZM5yyBcg" },
-    ),
-    tsEventNode(
-      "2025-10-09",
-      '【Road To Empress】 Ruling the palace one "good" decision at a time',
-
-      {
-        externalLink: "https://youtu.be/6_Sa67bo53I",
-        imageName: "thumbnail-0.jpg",
-        id: "2025-10-09_0",
-      },
-    ),
-    tsEventNode(
-      "2025-10-09",
-      "youtube please",
-
-      {
-        externalLink: "https://youtu.be/q42ucyHBSZ8",
-        imageName: "thumbnail-1.jpg",
-        id: "2025-10-09_1",
-      },
-    ),
-    tsEventNode(
-      "2025-10-10",
-      "【BIRTHDAY STREAM】 Nimi's Maze of Horrors #BirthdayBaku2025",
-
-      { externalLink: "https://youtu.be/2-heo8MsGoY" },
-    ),
-    tsEventNode(
-      "2025-10-12",
-      "【CARIMARA】 Beautiful & Creepy Horror Game Where You have no voice",
-
-      { externalLink: "https://youtu.be/G03zV4PlHxs" },
-    ),
-    tsEventNode(
-      "2025-10-13",
-      "【MINECRAFT SKYBLOCK】 My island is so cottagecore cozycore prisoncore",
-
-      { externalLink: "https://youtu.be/FhdqJ-HYSP0" },
-    ),
-    tsEventNode(
-      "2025-10-15",
-      "Nimi attempts to draw Pokémon from memory",
-
-      { externalLink: "https://youtu.be/Q5BGyVWWl_4" },
-    ),
-  ];
+      return nodes;
+    }, [] as TimelineDatum[]);
 </script>
 
 <svelte:head>

@@ -1,5 +1,15 @@
 import type { Component } from "svelte";
 
+export interface StreamMetadata {
+  title: string;
+  date: string;
+  thumbnail: string;
+  type: string;
+  isLogged: boolean;
+  isOnWebsite: boolean;
+  link: string;
+}
+
 export type TimelineData = Array<TimelineDatum>;
 
 export type TimelineDatum = TimelineSkip | TimelineEvent;
@@ -14,7 +24,7 @@ export class TimelineSkip {
 }
 
 export interface TimelineEventProps {
-  title?: string;
+  title?: string[];
   subtitle?: string;
   content?: string;
   imageUrl?: string | Promise<string | undefined>;
@@ -25,6 +35,8 @@ export interface TimelineEventProps {
   height?: string;
   maxHeight?: string;
   direction?: "down" | "right" | "left" | "up";
+  animate?: boolean;
+  accentColor?: string;
   onHeaderResize?: (e: CustomEvent) => void;
 }
 

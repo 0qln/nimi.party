@@ -14,7 +14,7 @@
     type TimelineDimensions,
   } from "./types";
 
-  import { select, type Selection } from "d3";
+  import { select } from "d3";
   import * as d3 from "d3";
   import { tick } from "svelte";
 
@@ -25,6 +25,32 @@
 
   import { isBetween, mulberry32 } from "../utils";
 
+  let {
+    data = [],
+    orientation = "horizontal",
+    lineColor = "#6F5548",
+    branchColor = "#755950",
+    lineWidth = 2,
+    lineArtifactGap = 300,
+    lineLeafSize = { w: 20, h: 20 },
+    lineLeafRoot = "bottom-center",
+    lineBranch2Size = { w: 40, h: 40 },
+    lineBranch2Root = "bottom-center",
+    lineBranchYoungSize = { w: 40, h: 30 },
+    lineBranchYoungRoot = "bottom-left",
+    lineBlossomSize = { w: 25, h: 25 },
+    lineBlossomRoot = "none",
+    pxPerDay = 150,
+    showBranches = true,
+    animateBranch = false,
+    animateNodes = true,
+    animationDuration = 300,
+    easing = "cubic",
+    padding = 50,
+    branchLenX = 60,
+    branchLenY = 60,
+  }: Props = $props();
+
   let branchesRef: SVGSVGElement;
   let lineGroupRef: SVGGElement;
   let eventsRef: HTMLDivElement;
@@ -32,15 +58,159 @@
 
   let containerWidth = $state(0);
   let containerHeight = $state(0);
-  let decorations = $state<TimelineDecoration[]>([]);
 
-  let timelineSel: Selection<SVGPathElement, unknown, null, undefined>;
-  let branchesSel: Selection<SVGPathElement, unknown, null, undefined>[] = [];
+  let events: Array<{ node: TimelineEvent; index: number }> = $derived(
+    nodes<TimelineEvent>(TimelineNodeType.Event),
+  );
+
+  let skips: Array<{ node: TimelineSkip; index: number }> = $derived(
+    nodes<TimelineSkip>(TimelineNodeType.Skip),
+  );
+
+  let xPositions = $derived.by(() => {
+    return Array.from({ length: data.length }, (_, datumIndex: number) => {
+      return d3.reduce(
+        data.slice(0, datumIndex + 1),
+        function (acc, curr, index) {
+          const prev = data[index - 1];
+
+          if (!prev) {
+            return firstDatumX();
+          }
+
+          return acc + segmentWidth(prev, curr);
+        },
+        0,
+      );
+    });
+  });
+
+  let decorations = $derived.by<TimelineDecoration[]>(() => {
+    const dims = {
+      width: containerWidth,
+      height: containerHeight,
+    };
+    const xs: TimelineDecoration[] = [];
+    if (lineArtifactGap) {
+      const rng = mulberry32(69);
+      const lineArtifactStart = lineArtifactGap;
+      const lineArtifactEnd = datumXPosition(data.length - 2);
+
+      const addDecoration = (
+        xMain: number,
+        type: "leaf" | "branch2" | "young" | "blossom",
+      ) => {
+        let size: Size;
+        let rootStr: string;
+        let src: string | object;
+        let xOffset = 0;
+        let yOffsetMod = 0;
+        let rngOffFactor = 1;
+
+        if (type === "leaf") {
+          size = lineLeafSize;
+          rootStr = lineLeafRoot;
+          src = lineLeaf;
+          rngOffFactor = 1;
+        } else if (type === "branch2") {
+          size = lineBranch2Size;
+          rootStr = lineBranch2Root;
+          src = lineBranch2;
+          rngOffFactor = 0.33;
+        } else if (type === "young") {
+          size = lineBranchYoungSize;
+          rootStr = lineBranchYoungRoot;
+          src = lineBranchYoung;
+          xOffset = 10;
+          rngOffFactor = 0.33;
+        } else {
+          // blossom
+          size = lineBlossomSize;
+          rootStr = lineBlossomRoot;
+          src = lineBlossom;
+          xOffset = 5;
+        }
+
+        const width = size.w;
+        const height = size.h;
+        const index = xMain / lineArtifactGap;
+        const pos =
+          type === "leaf"
+            ? index % 3 == 0
+              ? "above"
+              : "below"
+            : index % 2 == 0
+              ? "above"
+              : "below";
+
+        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
+        const isFirst = xMain == lineArtifactStart;
+        const rngOff = lineArtifactGap * rngOffFactor;
+
+        if (type === "blossom") {
+          const x = padding + xMain + 5;
+          const y =
+            mainlineY(dims) -
+            (pos === "above" ? height : 0) +
+            (pos === "above" ? -10 : 10);
+          const root = rootToOffset(rootStr, size);
+          if (!isOnSkipSection(x)) {
+            xs.push({
+              id: `blossom-${index}`,
+              src,
+              width,
+              height,
+              style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, 1) translate(${root.x}px, ${root.y}px);`,
+            });
+          }
+          return;
+        }
+
+        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
+        const x = padding + xMain + xRng + xOffset;
+        const y = mainlineY(dims);
+        const root = rootToOffset(rootStr, size);
+
+        if (!isOnSkipSection(x)) {
+          const mirror = pos === "below";
+          xs.push({
+            id: `${type}-${index}`,
+            src,
+            width,
+            height,
+            style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, ${mirror ? -1 : 1}) translate(${root.x}px, ${root.y}px);`,
+          });
+        }
+      };
+
+      for (
+        let xMain = lineArtifactStart;
+        xMain < lineArtifactEnd;
+        xMain += lineArtifactGap
+      ) {
+        addDecoration(xMain, "leaf");
+        addDecoration(xMain, "branch2");
+        addDecoration(xMain, "young");
+        // addDecoration(xMain, "blossom");
+      }
+    }
+
+    return xs;
+  });
+
+  interface MainlineDatum {
+    padding: number;
+    y: number;
+  }
 
   interface Size {
     w: number;
     h: number;
   }
+
+  type YAnchor = "top" | "bottom";
+
+  type AbsPos = { top: number | null; bottom: number | null };
 
   interface TimelineDecoration {
     id: string;
@@ -68,7 +238,8 @@
     /// The space in px occupied by a single day.
     pxPerDay?: number;
     showBranches?: boolean;
-    animate?: boolean;
+    animateBranch?: boolean;
+    animateNodes?: boolean;
     animationDuration?: number;
     easing?: AnimationEasing;
     padding?: number;
@@ -78,44 +249,11 @@
     branchLenY?: number;
   }
 
-  let {
-    data = [],
-    orientation = "horizontal",
-    lineColor = "#6F5548",
-    branchColor = "#755950",
-    lineWidth = 2,
-    lineArtifactGap = 300,
-    lineLeafSize = { w: 20, h: 20 },
-    lineLeafRoot = "bottom-center",
-    lineBranch2Size = { w: 40, h: 40 },
-    lineBranch2Root = "bottom-center",
-    lineBranchYoungSize = { w: 40, h: 30 },
-    lineBranchYoungRoot = "bottom-left",
-    lineBlossomSize = { w: 25, h: 25 },
-    lineBlossomRoot = "none",
-    pxPerDay = 150,
-    showBranches = true,
-    animate = false,
-    animationDuration = 800,
-    easing = "cubic",
-    padding = 50,
-    branchLenX = 60,
-    branchLenY = 60,
-  }: Props = $props();
-
   function nodes<T>(type: TimelineNodeType): Array<{ node: T; index: number }> {
     return data
       .map((x, i) => ({ x, i }))
       .filter(({ x }) => x.type == type)
       .map(({ x, i }) => ({ node: x as T, index: i }));
-  }
-
-  function events(): Array<{ node: TimelineEvent; index: number }> {
-    return nodes<TimelineEvent>(TimelineNodeType.Event);
-  }
-
-  function skips(): Array<{ node: TimelineSkip; index: number }> {
-    return nodes<TimelineSkip>(TimelineNodeType.Skip);
   }
 
   const easingFunctions = {
@@ -270,18 +408,17 @@
 
   /// x position on the main line.
   function datumXPosition(datumIndex: number): number {
-    return d3.reduce(
-      data.slice(0, datumIndex + 1),
-      function (acc, curr, index) {
-        const prev = data[index - 1];
+    return xPositions[datumIndex];
+  }
 
-        if (!prev) {
-          return firstDatumX();
-        }
-
-        return acc + segmentWidth(prev, curr);
-      },
-      0,
+  /// whether this x coordinate is on a skip section.
+  function isOnSkipSection(x: number): boolean {
+    return skips.some(({ node, index }) =>
+      isBetween(
+        x,
+        datumXPosition(index) - skipWidth(node),
+        datumXPosition(index) + skipWidth(node),
+      ),
     );
   }
 
@@ -293,10 +430,6 @@
       branchWidth(data[data.length - 1] as TimelineEvent)
     );
   }
-
-  type YAnchor = "top" | "bottom";
-
-  type AbsPos = { top: number | null; bottom: number | null };
 
   function getNodeX(
     datumIndex: number,
@@ -361,47 +494,83 @@
     return p;
   }
 
+  function moveDir(pos: TimelineNodePosition): 1 | -1 {
+    switch (pos) {
+      case "above":
+        return -1;
+      case "below":
+        return 1;
+      default:
+        throw new Error("not implemented");
+    }
+  }
+  const rightEdge = (r: Rect) => r.x + r.width;
+
+  const leftEdge = (r: Rect) => r.x;
+
+  const xCenter = (r: Rect) => r.x + r.width / 2;
+
+  const nodeBranch = (r: Rect) => ({
+    x: xCenter(r) - branchLenX,
+    y: null!,
+    width: branchLenX,
+    height: null!,
+  });
+
+  function resolveCollisions(rects: Rect[], dir: TimelineNodePosition) {
+    for (let i = 0; i < rects.length; i++) {
+      resolveCollision(rects.slice(0, i), rects[i], dir);
+    }
+  }
+
+  function isOuter(a: Rect, b: Rect, dir: TimelineNodePosition): boolean {
+    switch (dir) {
+      case "above":
+        return a.y < b.y;
+      case "below":
+        return a.y >= b.y;
+      default:
+        throw new Error("not implemented");
+    }
+  }
+
   function resolveCollision(
     rects: Rect[],
     node: Rect,
     direction: TimelineNodePosition,
     margin: number = 10,
-  ): number {
+  ) {
     let problem, intersect;
     while (
-      (problem = rects.find((x) => doRectsIntersect(x, node))) &&
+      (problem = rects.find((x) => x != node && doRectsIntersect(x, node))) &&
       (intersect = getRectIntersection(problem, node))
     ) {
-      switch (direction) {
-        case "above":
-          const problemIsAbove = problem.y < node.y;
-          if (problemIsAbove) {
-            problem.y -= intersect.height + margin;
-          } else {
-            node.y -= intersect.height + margin;
-          }
-          break;
-        case "below":
-          const problemIsBelow = problem.y > node.y;
-          if (problemIsBelow) {
-            problem.y += intersect.height + margin;
-          } else {
-            node.y += intersect.height + margin;
-          }
-          break;
-        default:
-          throw new Error("not implemented");
+      let rectToMove, rectFixed;
+
+      // move the problem if it's already outer
+      if (isOuter(problem, node, direction)) {
+        ((rectToMove = problem), (rectFixed = node));
+      } else {
+        ((rectToMove = node), (rectFixed = problem));
       }
-      // make sure that the node is not covering the problem's branch
-      const branchLeftEdge = node.x + node.width / 2 - branchLenX;
-      const problemRightEdge = problem.x + problem.width;
-      const problemBranchCollision = problemRightEdge - branchLeftEdge;
-      if (problemBranchCollision > 0) {
-        problem.x -= problemBranchCollision + margin;
+
+      const distToMove = margin + Math.max(intersect.height, rectFixed.height);
+      rectToMove.y += moveDir(direction) * distToMove;
+
+      const branch = nodeBranch(rectToMove);
+      if (rectToMove.x < rectFixed.x) {
+        const intersect = rightEdge(branch) - leftEdge(rectFixed);
+        if (intersect > 0) {
+          // pushing the node to the right of the branch requires a margin.
+          rectFixed.x += intersect + margin;
+        }
+      } else {
+        const intersect = rightEdge(rectFixed) - leftEdge(branch);
+        if (intersect > 0) {
+          rectFixed.x -= intersect;
+        }
       }
     }
-
-    return node.y;
   }
 
   const cssPos = (x: number | null) => (x ? `${x}px` : "unset");
@@ -411,6 +580,15 @@
     y: number;
     width: number;
     height: number;
+  }
+
+  interface Node {
+    rect: Rect;
+    branch: Branch;
+  }
+
+  interface Branch {
+    rect: Rect;
   }
 
   function getRectIntersection(rect1: Rect, rect2: Rect): Rect | null {
@@ -453,12 +631,38 @@
       dims.width = Math.max(contentWidth(), containerWidth);
 
       if (dims.width != 0 && dims.height != 0) {
-        requestAnimationFrame(() => {
-          drawTimeline(dims);
-        });
+        scheduleDraw();
       }
     });
   });
+
+  let isDrawing = false;
+  let redrawPending = false;
+  async function scheduleDraw() {
+    // 1. If we are already running, just flag that we need another run after this one.
+    // This effectively "queues" the LATEST request and discards intermediate ones.
+    if (isDrawing) {
+      redrawPending = true;
+      return;
+    }
+
+    // 2. Lock the process
+    isDrawing = true;
+
+    try {
+      // 3. Keep drawing as long as there is a pending request.
+      do {
+        redrawPending = false;
+        await drawTimeline({
+          width: containerWidth,
+          height: containerHeight,
+        });
+      } while (redrawPending);
+    } finally {
+      // 4. Release the lock only when we are totally caught up
+      isDrawing = false;
+    }
+  }
 
   async function drawTimeline(dims: TimelineDimensions) {
     if (!lineGroupRef || !branchesRef || !eventsRef || data.length === 0)
@@ -471,9 +675,7 @@
     if (orientation === "horizontal") {
       drawHorizontalTimeline(dims);
     } else {
-      throw new Error(
-        "Vertical orientation not implemented in this D3 refactor yet.",
-      );
+      throw new Error("not implemented");
     }
   }
 
@@ -482,37 +684,46 @@
     await tick();
   }
 
-  function drawHorizontalTimeline(dims: TimelineDimensions): void {
-    const lineGroup = select(lineGroupRef);
-    const branchRoot = select(branchesRef);
-
-    // Clear previous SVG elements to redraw
-    branchRoot.selectAll("*").remove();
-    lineGroup.selectAll("*").remove();
-    branchesSel = [];
-
+  // The final width is the maximum of the viewport (available space) and the required content width.
+  function getFinalWidth(): number {
     const minRequiredWidth = contentWidth();
-
-    // The final width is the maximum of the viewport (available space) and the required content width.
     const parentWidth = containerRef.parentElement?.clientWidth || 0;
     const finalWidth = Math.max(parentWidth, minRequiredWidth);
+    return finalWidth;
+  }
 
-    // Apply width to container and update state
-    select(containerRef).style("width", `${finalWidth}px`);
-    dims = { width: finalWidth, height: dims.height };
+  function mainlineY(dims: TimelineDimensions): number {
+    return dims.height / 2;
+  }
 
-    const yPos = dims.height / 2;
+  function rootToOffset(root: string, size: Size): { x: number; y: number } {
+    switch (root) {
+      case "bottom-center":
+        return { x: size.w / 2, y: -size.h };
+      case "bottom-left":
+        return { x: size.w, y: -size.h };
+      case "none":
+        return { x: 0, y: 0 };
+      default:
+        throw Error("unimplemented");
+    }
+  }
 
-    // Draw Main Line
-    timelineSel = lineGroup
-      .append("path")
-      .attr("d", mainPath(padding, yPos))
+  // Draw Main Line
+  $effect(() => {
+    const dims = {
+      width: containerWidth,
+      height: containerHeight,
+    };
+
+    const timelineSel = select(lineGroupRef)
+      .select<SVGPathElement>("path")
+      .datum({ y: mainlineY(dims), padding })
+      .attr("d", (d) => mainPath(d.padding, d.y))
       .attr("stroke", lineColor)
-      .attr("stroke-width", lineWidth)
-      .attr("fill", "none")
-      .attr("class", "timeline-main-line");
+      .attr("stroke-width", lineWidth);
 
-    if (animate) {
+    if (animateBranch) {
       const len = timelineSel.node()?.getTotalLength() || 0;
       timelineSel
         .attr("stroke-dasharray", len)
@@ -522,249 +733,107 @@
         .ease(easingFunctions[easing])
         .attr("stroke-dashoffset", 0);
     }
+  });
 
-    function isOnSkipSection(x: number): boolean {
-      return skips().some(({ node: s, index }) =>
-        isBetween(
-          x,
-          datumXPosition(index) - skipWidth(s),
-          datumXPosition(index) + skipWidth(s),
-        ),
-      );
-    }
-
-    function rootToOffset(root: string, size: Size): { x: number; y: number } {
-      switch (root) {
-        case "bottom-center":
-          return { x: size.w / 2, y: -size.h };
-        case "bottom-left":
-          return { x: size.w, y: -size.h };
-        case "none":
-          return { x: 0, y: 0 };
-        default:
-          throw Error("unimplemented");
-      }
-    }
-
-    // Calculate Main Line leafs (Refactored to Svelte state)
-    const newDecorations: TimelineDecoration[] = [];
-
-    if (lineArtifactGap) {
-      const rng = mulberry32(69);
-      const lineArtifactStart = lineArtifactGap;
-      const lineArtifactEnd = datumXPosition(data.length - 2);
-
-      const addDecoration = (
-        xMain: number,
-        type: "leaf" | "branch2" | "young" | "blossom",
-      ) => {
-        let size: Size;
-        let rootStr: string;
-        let src: string | object;
-        let xOffset = 0;
-        let yOffsetMod = 0;
-        let rngOffFactor = 1;
-
-        if (type === "leaf") {
-          size = lineLeafSize;
-          rootStr = lineLeafRoot;
-          src = lineLeaf;
-          rngOffFactor = 1;
-        } else if (type === "branch2") {
-          size = lineBranch2Size;
-          rootStr = lineBranch2Root;
-          src = lineBranch2;
-          rngOffFactor = 0.33;
-        } else if (type === "young") {
-          size = lineBranchYoungSize;
-          rootStr = lineBranchYoungRoot;
-          src = lineBranchYoung;
-          xOffset = 10;
-          rngOffFactor = 0.33;
-        } else {
-          // blossom
-          size = lineBlossomSize;
-          rootStr = lineBlossomRoot;
-          src = lineBlossom;
-          xOffset = 5;
-        }
-
-        const width = size.w;
-        const height = size.h;
-        const index = xMain / lineArtifactGap;
-        // logic differs slightly per type for pos
-        const pos =
-          type === "leaf"
-            ? index % 3 == 0
-              ? "above"
-              : "below"
-            : index % 2 == 0
-              ? "above"
-              : "below";
-
-        const isLast = xMain + lineArtifactGap >= lineArtifactEnd;
-        const isFirst = xMain == lineArtifactStart;
-        const rngOff = lineArtifactGap * rngOffFactor;
-
-        // Blossom has specific Y logic
-        if (type === "blossom") {
-          // Blossom logic from original
-          const x = padding + xMain + 5;
-          const y =
-            yPos -
-            (pos === "above" ? height : 0) +
-            (pos === "above" ? -10 : 10);
-          const root = rootToOffset(rootStr, size);
-          if (!isOnSkipSection(x)) {
-            newDecorations.push({
-              id: `blossom-${index}`,
-              src,
-              width,
-              height,
-              style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, 1) translate(${root.x}px, ${root.y}px);`,
-            });
-          }
-          return;
-        }
-
-        const xRng = rng({ lo: isFirst ? 0 : rngOff, hi: isLast ? 0 : rngOff });
-        const x = padding + xMain + xRng + xOffset;
-        const y = yPos;
-        const root = rootToOffset(rootStr, size);
-
-        if (!isOnSkipSection(x)) {
-          const mirror = pos === "below";
-          newDecorations.push({
-            id: `${type}-${index}`,
-            src,
-            width,
-            height,
-            style: `position: absolute; left: 0; top: 0; width: ${width}px; height: ${height}px; transform-origin: 0 0; transform: translate(${x}px, ${y}px) scale(1, ${mirror ? -1 : 1}) translate(${root.x}px, ${root.y}px);`,
-          });
-        }
-      };
-
-      // leaf
-      for (
-        let xMain = lineArtifactStart;
-        xMain < lineArtifactEnd;
-        xMain += lineArtifactGap
-      ) {
-        addDecoration(xMain, "leaf");
-      }
-
-      // branch2
-      for (
-        let xMain = lineArtifactStart;
-        xMain < lineArtifactEnd;
-        xMain += lineArtifactGap
-      ) {
-        addDecoration(xMain, "branch2");
-      }
-
-      // branchYoung
-      for (
-        let xMain = lineArtifactStart;
-        xMain < lineArtifactEnd;
-        xMain += lineArtifactGap
-      ) {
-        addDecoration(xMain, "young");
-      }
-
-      // blossom
-      if (false) {
-        for (
-          let xMain = lineArtifactStart;
-          xMain < lastDatumX();
-          xMain += lineArtifactGap
-        ) {
-          addDecoration(xMain, "blossom");
-        }
-      }
-    }
-
-    // Update Svelte state
-    decorations = newDecorations;
-
-    // Bind data
-    const eventsSel = select(eventsRef)
-      .selectAll<HTMLDivElement, any>(".timeline-node-container")
-      .data(events());
-
-    const rects: Rect[] = [];
-
-    // 1. Calculate Arrangement
-    eventsSel.each(function (d, i) {
-      const { node, index } = d;
-      const nodeRect = node.getNodeRect()!;
-      const position = node.position || defaultPos(i);
-
-      nodeRect.x = getNodeX(index, branchWidth(node), nodeRect);
-      nodeRect.y = getNodeY(position, yPos, branchHeight(node), nodeRect);
-      nodeRect.y = resolveCollision(rects, nodeRect, position);
-
-      rects[i] = nodeRect as Rect;
+  function measureNodes(): Rect[] | undefined {
+    const rects: (Rect | undefined)[] = events.map((d) => {
+      const { node } = d;
+      const rect = node.getNodeRect();
+      return rect as Rect | undefined;
     });
 
+    if (rects.some((x) => !x)) {
+      return undefined;
+    }
+
+    return rects as Rect[];
+  }
+
+  function drawHorizontalTimeline(dims: TimelineDimensions): void {
+    // Apply width to container
+    const finalWidth = getFinalWidth();
+    select(containerRef).style("width", `${finalWidth}px`);
+
+    const yPos = mainlineY(dims);
+
+    // 0. Measure Nodes
+    const rects = measureNodes();
+    if (!rects) return;
+
+    // 1. Calculate Arrangement
+    for (let i = 0; i < events.length; i++) {
+      const { node, index } = events[i];
+      const position = node.position || defaultPos(i);
+      const rect = rects[i];
+      rect.x = getNodeX(index, branchWidth(node), rect);
+      rect.y = getNodeY(position, yPos, branchHeight(node), rect);
+    }
+
+    resolveCollisions(
+      rects.filter((r) => r.y < yPos),
+      "above",
+    );
+    resolveCollisions(
+      rects.filter((r) => r.y > yPos),
+      "below",
+    );
+
     // 2. Apply Arrangement
-    eventsSel.each(function (d, i) {
+    const nodeData: any[] = events.map((d, i) => {
       const { node, index } = d;
       const pos = node.position || defaultPos(i);
       const rect = rects[i];
-      const nodeSel = select(this);
-      const expansion = node.expansion || "down";
-
+      const exp = node.expansion || "down";
       const left = rect.x;
-      const { top, bottom } = anchorNodeY(expansion, pos, (a) =>
+      const { top, bottom } = anchorNodeY(exp, pos, (a) =>
         defineNodeY(a, rect, dims),
       );
-      const xPos = datumXPosition(index);
 
-      // Node
-      nodeSel
-        .style("left", cssPos(left))
-        .style("top", cssPos(top))
-        .style("bottom", cssPos(bottom));
-
-      if (animate) {
-        nodeSel
-          .transition()
-          .duration(animationDuration)
-          .ease(easingFunctions[easing])
-          .style("opacity", "1");
-      }
-
-      // Branch
-      if (showBranches) {
-        const branchLenY =
-          yPos - (pos === "above" ? top : bottom)! - rect.height;
-        const dY = pos === "above" ? -branchLenY : +branchLenY;
-        const dX = branchWidth(node);
-        const branchStr = startPath(xPos, yPos) + branchPath(dX, dY);
-
-        const branch = branchRoot
-          .append("path")
-          .attr("d", branchStr)
-          .attr("stroke", branchColor)
-          .attr("stroke-width", 1.5)
-          .attr("fill", "none")
-          .attr("class", "timeline-branch");
-
-        branchesSel.push(branch);
-
-        if (animate) {
-          const length = branch.node()?.getTotalLength() || 0;
-          branch
-            .attr("stroke-dasharray", length)
-            .attr("stroke-dashoffset", length)
-            .transition()
-            .duration(animationDuration / 2)
-            .delay(animationDuration / 4)
-            .ease(easingFunctions[easing])
-            .attr("stroke-dashoffset", 0);
-        }
-      }
+      return { left, top, bottom, rect, pos, node, index };
     });
+
+    // Node
+    select(eventsRef)
+      .selectAll<HTMLDivElement, any>(".timeline-node-container")
+      .data(nodeData)
+      .style("left", (d) => cssPos(d.left))
+      .style("top", (d) => cssPos(d.top))
+      .style("bottom", (d) => cssPos(d.bottom));
+
+    // Branch
+    if (showBranches) {
+      const branchesSel = select(branchesRef)
+        .selectAll<SVGPathElement, any>("*")
+        .data(nodeData, (d: any) => d.index)
+        .join("path")
+        .attr("d", (d) => {
+          const xPos = datumXPosition(d.index);
+          const branchLenY =
+            yPos - (d.pos === "above" ? d.top : d.bottom)! - d.rect.height;
+          const dY = d.pos === "above" ? -branchLenY : +branchLenY;
+          const dX = branchWidth(d.node);
+          return startPath(xPos, yPos) + branchPath(dX, dY);
+        })
+        .attr("stroke", branchColor)
+        .attr("stroke-width", 1.5)
+        .attr("fill", "none")
+        .attr("class", "timeline-branch");
+
+      if (animateBranch) {
+        branchesSel
+          .attr("stroke-dasharray", function () {
+            return this?.getTotalLength() || 0;
+          })
+          .attr("stroke-dashoffset", function () {
+            return this?.getTotalLength() || 0;
+          })
+          .transition()
+          .duration(animationDuration / 2)
+          .delay(animationDuration / 4)
+          .ease(easingFunctions[easing])
+          .attr("stroke-dashoffset", 0);
+      }
+    }
   }
 </script>
 
@@ -789,7 +858,9 @@
     aria-label="Timeline main line"
   >
     <!-- Group for D3 to draw the main path into -->
-    <g bind:this={lineGroupRef}></g>
+    <g bind:this={lineGroupRef}
+      ><path class="timeline-main-line" fill="none"></path></g
+    >
   </svg>
 
   <div class="timeline-decorations">
@@ -805,10 +876,13 @@
   </div>
 
   <div class="timeline-nodes" bind:this={eventsRef}>
-    {#each events().map( (x, i) => ({ x, i }), ) as { x: { node }, i } (node.id || i)}
+    {#each events.map( (x, i) => ({ x, i }), ) as { x: { node }, i } (node.id || i)}
       <div
         id="timeline-event-{i}"
-        class="timeline-node-container"
+        class={[
+          "timeline-node-container",
+          animateNodes && "timeline-node-animation",
+        ]}
         style="position: absolute; left: 0px; top: 0px;"
         aria-label={`Timeline node ${i + 1}`}
       >
@@ -816,14 +890,10 @@
           bind:this={node.ref}
           maxHeight="{containerHeight / 2}px"
           onHeaderResize={(_v: any) => {
-            requestAnimationFrame(() => {
-              drawTimeline({
-                width: containerWidth,
-                height: containerHeight,
-              });
-            });
+            scheduleDraw();
           }}
           {...node.props}
+          animate={animateNodes}
         />
       </div>
     {/each}
@@ -864,19 +934,27 @@
 
   .timeline-nodes {
     position: relative;
-    width: 100%;
+    width: calc(100% + 500px);
     height: 100%;
     pointer-events: none;
   }
 
-  :global(.timeline-node-container) {
+  .timeline-node-container {
     pointer-events: auto;
     cursor: pointer;
-    transition: transform 0.3s ease;
     outline: none;
   }
 
-  :global(.timeline-node-container:hover) {
+  .timeline-node-animation {
+    transition:
+      transform 0.3s ease,
+      left 0.3s ease,
+      top 0.3s ease,
+      bottom 0.3s ease,
+      right 0.3s ease;
+  }
+
+  .timeline-node-container:hover {
     transform: scale(1.05);
     z-index: 10;
   }
