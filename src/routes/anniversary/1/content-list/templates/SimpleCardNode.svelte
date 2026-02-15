@@ -25,9 +25,9 @@
     onHeaderResize(new CustomEvent("headerResize", { detail: v }));
   }
 
-  let headerRef: HTMLDivElement;
+  let ref: HTMLDivElement;
   export function getNodeRect(): DOMRect | undefined {
-    return select(headerRef)?.node()?.getBoundingClientRect();
+    return select(ref)?.node()?.getBoundingClientRect();
   }
 </script>
 
@@ -96,6 +96,7 @@
 {/snippet}
 
 <div
+  bind:this={ref}
   class="card-root"
   style:--card-accent-color={accentColor}
   role="article"
@@ -108,7 +109,6 @@
   <div
     class="card-head"
     bind:borderBoxSize={null, (v) => dispatchHeaderResize(v)}
-    bind:this={headerRef}
   >
     {#if image}
       {@render tImage()}
