@@ -26,6 +26,7 @@
   import type { Volunteer } from "./types";
   import volunteersRaw from "$lib/assets/credits/volunteers.json?raw";
   import streamCsv from "$lib/assets/content-list/NIMI_CONTENT.csv?raw";
+  import SimpleCardNode from "./content-list/templates/SimpleCardNode.svelte";
 
   // We use a maxium width of 350 pixels for each event note in the timeline.
   // Thus we don't need the images to be any bigger.
@@ -167,7 +168,7 @@
     return new TimelineEvent({
       id,
       date: dateObj,
-      component: CustomCardNode,
+      component: SimpleCardNode,
       props: {
         title: row.title,
         subtitle: dateObj.toLocaleDateString(),
