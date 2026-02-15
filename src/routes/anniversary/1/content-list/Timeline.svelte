@@ -897,7 +897,6 @@
     height: 100%;
     min-height: 80vh;
     overflow: visible;
-    margin-right: 150px;
   }
 
   .timeline-main,
@@ -925,7 +924,7 @@
 
   .timeline-nodes {
     position: relative;
-    width: 100%;
+    width: calc(100% + 500px);
     height: 100%;
     pointer-events: none;
   }
