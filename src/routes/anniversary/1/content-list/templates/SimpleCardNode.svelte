@@ -58,7 +58,7 @@
 
 {#snippet tHeader()}
   <FluidText class="card-header-wrapper">
-    <h3 class="card-title delius-regular">
+    <h3 class="card-title delius-regular text-center">
       {#each title as line}
         {line} <br />
       {/each}
