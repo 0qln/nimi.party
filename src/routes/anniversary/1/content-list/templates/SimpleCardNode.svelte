@@ -65,7 +65,14 @@
     </h3>
     {#if subtitle}
       <div
-        class={["flex", "flex-row", "items-center", "mt-0.25", "space-x-0.25"]}
+        class={[
+          "flex",
+          "flex-row",
+          "items-center",
+          "justify-between",
+          "mt-0.25",
+          "space-x-0.25",
+        ]}
       >
         {@render tExternalLink()}
         <p class={["card-subtitle", "m-0!"]}>{subtitle}</p>
