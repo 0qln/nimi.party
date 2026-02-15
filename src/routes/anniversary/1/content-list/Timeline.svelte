@@ -361,37 +361,155 @@
     return p;
   }
 
+  function resolveCollisions(
+    rects: Rect[],
+    center: number,
+    margin: number = 10,
+  ) {
+    function moveDir(pos: TimelineNodePosition): 1 | -1 {
+      switch (pos) {
+        case "above":
+          return -1;
+        case "below":
+          return 1;
+        default:
+          throw new Error("not implemented");
+      }
+    }
+
+    function moveRect(
+      dir: TimelineNodePosition,
+      theOneBeingMoved: Rect,
+      ...theOnesStayingInPlace: Rect[]
+    ) {
+      const resolvingDistance = Math.max(
+        ...[
+          ...theOnesStayingInPlace.map((x) => x.height),
+          ...theOnesStayingInPlace
+            .map((x) => getRectIntersection(x, theOneBeingMoved)?.height)
+            .filter((x) => x != null),
+        ],
+      );
+      theOneBeingMoved.y += moveDir(dir) * (resolvingDistance + margin);
+
+      // make sure that the node is not covering the problem's branch
+      const rightEdge = (r: Rect) => r.x + r.width;
+      const xCenter = (r: Rect) => r.x + r.width / 2;
+      const branch: Rect = {
+        x: xCenter(theOneBeingMoved) - branchLenX,
+        y: null!,
+        width: branchLenX,
+        height: null!,
+      };
+      console.log(branch);
+      console.log(theOneBeingMoved);
+      console.log(theOnesStayingInPlace);
+      for (const rect of theOnesStayingInPlace) {
+        const leftIntersect = rightEdge(rect) - branch.x;
+        const rightIntersect = rect.x - rightEdge(branch);
+        if (leftIntersect > 0 && rightIntersect < 0) {
+          rect.x -= leftIntersect;
+        }
+        if (leftIntersect < 0 && rightIntersect > 0) {
+          rect.x += rightIntersect;
+        }
+      }
+    }
+
+    const aboveRects = rects.filter((r) => r.y < center);
+    const belowRects = rects.filter((r) => r.y > center);
+
+    // first make sure that we resolve 3-collisions by moving the middle.
+    function resolve3Collisions(dir: TimelineNodePosition, rects: Rect[]) {
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const prev = rects[i - 1];
+        const next = rects[i + 1];
+        const prevCollision = prev && doRectsIntersect(rect, prev);
+        const nextCollision = next && doRectsIntersect(rect, next);
+        if (prevCollision && nextCollision) {
+          // move this
+          moveRect(dir, rect, next, prev);
+        }
+      }
+    }
+    resolve3Collisions("above", aboveRects);
+    resolve3Collisions("below", belowRects);
+
+    // then resolve 2-collisions.
+    function resolve2Collisions(dir: TimelineNodePosition, rects: Rect[]) {
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const prev = rects[i - 1];
+        const next = rects[i + 1];
+
+        if (next && doRectsIntersect(rect, next)) {
+          // move next
+          moveRect(dir, next, rect);
+          continue;
+        }
+
+        if (prev && doRectsIntersect(rect, prev)) {
+          // move this
+          moveRect(dir, rect, prev);
+          continue;
+        }
+      }
+    }
+    resolve2Collisions("above", aboveRects);
+    resolve2Collisions("below", belowRects);
+  }
+
   function resolveCollision(
     rects: Rect[],
     node: Rect,
     direction: TimelineNodePosition,
     margin: number = 10,
-  ): number {
+  ) {
+    function problemIsAlreadyMoved(problem: Rect, node: Rect) {
+      switch (direction) {
+        case "above":
+          return problem.y < node.y;
+        case "below":
+          return problem.y > node.y;
+        default:
+          throw new Error("not implemented");
+      }
+    }
+
+    function moveRectOutward(rect: Rect, amount: number) {
+      switch (direction) {
+        case "above":
+          rect.y -= amount;
+          break;
+        case "below":
+          rect.y += amount;
+          break;
+        default:
+          throw new Error("not implemented");
+      }
+    }
+
     let problem, intersect;
     while (
       (problem = rects.find((x) => doRectsIntersect(x, node))) &&
       (intersect = getRectIntersection(problem, node))
     ) {
-      switch (direction) {
-        case "above":
-          const problemIsAbove = problem.y < node.y;
-          if (problemIsAbove) {
-            problem.y -= intersect.height + margin;
-          } else {
-            node.y -= intersect.height + margin;
-          }
-          break;
-        case "below":
-          const problemIsBelow = problem.y > node.y;
-          if (problemIsBelow) {
-            problem.y += intersect.height + margin;
-          } else {
-            node.y += intersect.height + margin;
-          }
-          break;
-        default:
-          throw new Error("not implemented");
+      let theOneStayingInPlace: Rect, theOneBeingMoved: Rect;
+
+      if (problemIsAlreadyMoved(problem, node)) {
+        theOneStayingInPlace = problem;
+        theOneBeingMoved = node;
+      } else {
+        theOneStayingInPlace = node;
+        theOneBeingMoved = problem;
       }
+
+      const fixNeeded = Math.max(intersect.height, theOneStayingInPlace.height);
+      const finalDistanceToMoveVertically = fixNeeded + margin;
+
+      moveRectOutward(theOneBeingMoved, finalDistanceToMoveVertically);
+
       // make sure that the node is not covering the problem's branch
       const branchLeftEdge = node.x + node.width / 2 - branchLenX;
       const problemRightEdge = problem.x + problem.width;
@@ -399,9 +517,8 @@
       if (problemBranchCollision > 0) {
         problem.x -= problemBranchCollision + margin;
       }
+      break;
     }
-
-    return node.y;
   }
 
   const cssPos = (x: number | null) => (x ? `${x}px` : "unset");
@@ -727,10 +844,29 @@
 
       nodeRect.x = getNodeX(index, branchWidth(node), nodeRect);
       nodeRect.y = getNodeY(position, yPos, branchHeight(node), nodeRect);
-      nodeRect.y = resolveCollision(rects, nodeRect, position);
 
       rects[i] = nodeRect as Rect;
     });
+
+    resolveCollisions(rects, yPos);
+
+    /*
+    const collisionQueue: any[] = [];
+    eventsSel.each(function (d, i) {
+      const { node } = d;
+      const position = node.position || defaultPos(i);
+      const nodeRect = rects[i];
+      collisionQueue.push({
+        rects: rects.slice(0, i),
+        position,
+        nodeRect,
+      });
+    });
+
+    for (const { nodeRect, rects, position } of collisionQueue) {
+      resolveCollision(rects, nodeRect, position);
+    }
+  */
 
     // 2. Apply Arrangement
     eventsSel.each(function (d, i) {
