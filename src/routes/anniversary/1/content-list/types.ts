@@ -35,6 +35,7 @@ export interface TimelineEventProps {
   height?: string;
   maxHeight?: string;
   direction?: "down" | "right" | "left" | "up";
+  animate?: boolean;
   accentColor?: string;
   onHeaderResize?: (e: CustomEvent) => void;
 }

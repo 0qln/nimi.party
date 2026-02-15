@@ -16,9 +16,12 @@
     height = "",
     maxHeight = "",
     direction = "down",
+    animate = true,
     accentColor = "var(--accent-color)",
     onHeaderResize: onHeaderResize = undefined,
   }: TimelineEventProps = $props();
+
+  let isImageLoaded = $state(false);
 
   let isVertical = $derived(direction === "down" || direction === "up");
   let cssWidth = $derived(width || (isVertical ? "400px" : "unset"));
@@ -53,8 +56,18 @@
   {:else if image instanceof Promise}
     {#await image then image}
       {#if image}
-        <div class="card-media">
-          <enhanced:img src={image} sizes="400px" alt={title} loading="lazy" />
+        <div
+          class="card-media"
+          style:width={isImageLoaded || !animate ? "100%" : "0%"}
+          style:transition="width 0.3s, height 0.3s"
+        >
+          <enhanced:img
+            src={image}
+            sizes="400px"
+            alt={title}
+            loading="lazy"
+            onload={() => (isImageLoaded = true)}
+          />
         </div>
       {/if}
     {/await}
