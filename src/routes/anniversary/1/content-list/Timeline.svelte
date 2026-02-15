@@ -401,9 +401,6 @@
         width: branchLenX,
         height: null!,
       };
-      console.log(branch);
-      console.log(theOneBeingMoved);
-      console.log(theOnesStayingInPlace);
       for (const rect of theOnesStayingInPlace) {
         const leftIntersect = rightEdge(rect) - branch.x;
         const rightIntersect = rect.x - rightEdge(branch);
@@ -458,67 +455,6 @@
     }
     resolve2Collisions("above", aboveRects);
     resolve2Collisions("below", belowRects);
-  }
-
-  function resolveCollision(
-    rects: Rect[],
-    node: Rect,
-    direction: TimelineNodePosition,
-    margin: number = 10,
-  ) {
-    function problemIsAlreadyMoved(problem: Rect, node: Rect) {
-      switch (direction) {
-        case "above":
-          return problem.y < node.y;
-        case "below":
-          return problem.y > node.y;
-        default:
-          throw new Error("not implemented");
-      }
-    }
-
-    function moveRectOutward(rect: Rect, amount: number) {
-      switch (direction) {
-        case "above":
-          rect.y -= amount;
-          break;
-        case "below":
-          rect.y += amount;
-          break;
-        default:
-          throw new Error("not implemented");
-      }
-    }
-
-    let problem, intersect;
-    while (
-      (problem = rects.find((x) => doRectsIntersect(x, node))) &&
-      (intersect = getRectIntersection(problem, node))
-    ) {
-      let theOneStayingInPlace: Rect, theOneBeingMoved: Rect;
-
-      if (problemIsAlreadyMoved(problem, node)) {
-        theOneStayingInPlace = problem;
-        theOneBeingMoved = node;
-      } else {
-        theOneStayingInPlace = node;
-        theOneBeingMoved = problem;
-      }
-
-      const fixNeeded = Math.max(intersect.height, theOneStayingInPlace.height);
-      const finalDistanceToMoveVertically = fixNeeded + margin;
-
-      moveRectOutward(theOneBeingMoved, finalDistanceToMoveVertically);
-
-      // make sure that the node is not covering the problem's branch
-      const branchLeftEdge = node.x + node.width / 2 - branchLenX;
-      const problemRightEdge = problem.x + problem.width;
-      const problemBranchCollision = problemRightEdge - branchLeftEdge;
-      if (problemBranchCollision > 0) {
-        problem.x -= problemBranchCollision + margin;
-      }
-      break;
-    }
   }
 
   const cssPos = (x: number | null) => (x ? `${x}px` : "unset");
@@ -849,24 +785,6 @@
     });
 
     resolveCollisions(rects, yPos);
-
-    /*
-    const collisionQueue: any[] = [];
-    eventsSel.each(function (d, i) {
-      const { node } = d;
-      const position = node.position || defaultPos(i);
-      const nodeRect = rects[i];
-      collisionQueue.push({
-        rects: rects.slice(0, i),
-        position,
-        nodeRect,
-      });
-    });
-
-    for (const { nodeRect, rects, position } of collisionQueue) {
-      resolveCollision(rects, nodeRect, position);
-    }
-  */
 
     // 2. Apply Arrangement
     eventsSel.each(function (d, i) {

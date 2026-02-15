@@ -206,8 +206,6 @@
 
       return nodes;
     }, [] as TimelineDatum[]);
-
-  console.log(timelineNodes);
 </script>
 
 <svelte:head>
