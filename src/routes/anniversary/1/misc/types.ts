@@ -8,3 +8,8 @@ export interface TapirStepsProps {
 }
 
 export type Direction = "up" | "down";
+
+export interface FluidTextProps {
+  class?: string;
+  children?: import("svelte").Snippet;
+}
