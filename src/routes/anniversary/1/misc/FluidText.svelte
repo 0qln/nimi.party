@@ -1,105 +1,100 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import type { FluidTextProps } from "./types";
 
-  let className = "";
-  export { className as class };
+  let { class: className = "", children }: FluidTextProps = $props();
 
-  let container: HTMLDivElement;
-  let innerBlock: HTMLDivElement;
-  let observer: ResizeObserver;
+  let container = $state<HTMLDivElement>();
+  let innerBlock = $state<HTMLDivElement>();
 
-  // The Binary Search Logic
-  const fitText = () => {
-    if (!container || !innerBlock) return;
+  const DEBOUNCE_MS = 100;
+  const MAX_ITERATIONS = 20;
+
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let resizeObserver: ResizeObserver | undefined;
+  let mutationObserver: MutationObserver | undefined;
+
+  const fitText = async () => {
+    if (!container || !innerBlock || typeof window === "undefined") return;
 
     const targetHeight = container.clientHeight;
-    if (targetHeight === 0) return; // Element is hidden or has no height
+    if (targetHeight === 0) return;
 
-    // --- STEP 1: Find the Hard Minimum Width ---
-    // We temporarily set width to 'min-content'. This shrinks the container
-    // to the width of the widest unbreakable element (long word, image, etc.).
-    // If we go smaller than this, content will overflow horizontally.
+    // 1. Get the "Hard Minimum" (width of the longest word/element)
     innerBlock.style.width = "min-content";
+    const minW = Math.ceil(innerBlock.getBoundingClientRect().width);
 
-    // We use Math.ceil to ensure we don't lose sub-pixel precision
-    // causing a slight overflow.
-    const safeMinWidth = Math.ceil(innerBlock.getBoundingClientRect().width);
+    // 2. Get the "Maximum Necessary Width" (Single line width)
+    innerBlock.style.width = "max-content";
+    const maxW = Math.ceil(innerBlock.getBoundingClientRect().width);
 
-    // --- STEP 2: Binary Search ---
-
-    // Start the search at the safe minimum, not 0.
-    let minW = safeMinWidth;
-    let maxW = 10000; // Arbitrary large number
+    // 3. Binary Search
+    let low = minW;
+    let high = maxW;
     let optimalWidth = maxW;
 
-    // Safety check: if our arbitrary max is somehow smaller than the content,
-    // just use the content width.
-    if (maxW < minW) maxW = minW;
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      if (low > high) break;
 
-    while (minW <= maxW) {
-      const midW = Math.floor((minW + maxW) / 2);
-      innerBlock.style.width = midW + "px";
+      const midW = Math.floor((low + high) / 2);
+      innerBlock.style.width = `${midW}px`;
 
       // Check height:
-      // Note: We also check if scrollWidth > clientWidth to catch edge cases
-      // where the browser refuses to wrap despite our width setting.
       if (innerBlock.scrollHeight > targetHeight) {
-        // Text is too tall (wrapping too much) -> Needs MORE width
-        minW = midW + 1;
+        // Content is too tall (overflowing vertically) -> Needs MORE width
+        low = midW + 1;
       } else {
-        // Text fits vertically -> Try to squeeze Width TIGHTER
+        // Content fits vertically -> Try to squeeze Width TIGHTER
         optimalWidth = midW;
-        maxW = midW - 1;
+        high = midW - 1;
       }
     }
 
-    // Apply final width
-    // We ensure it never goes below the safe minimum we calculated at the start
-    innerBlock.style.width = Math.max(optimalWidth, safeMinWidth) + "px";
+    // 4. Apply Final Width
+    innerBlock.style.width = `${Math.max(optimalWidth, minW)}px`;
   };
 
-  onMount(() => {
-    // Run initially
-    fitText();
+  const triggerUpdate = () => {
+    if (typeof window === "undefined") return;
 
-    // Re-run if the window resizes or the element changes size
-    if (container) {
-      observer = new ResizeObserver(() => fitText());
-      observer.observe(container);
-    }
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      requestAnimationFrame(fitText);
+    }, DEBOUNCE_MS);
+  };
 
-    return () => observer?.disconnect();
-  });
+  $effect(() => {
+    if (!container || !innerBlock) return;
 
-  // Re-run if the content inside the slot changes
-  const setupSlotObserver = (node: Node) => {
-    const mutationObserver = new MutationObserver(async () => {
-      await tick(); // Wait for Svelte to render changes
-      fitText();
+    triggerUpdate();
+
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.height > 0) triggerUpdate();
+      }
     });
-    mutationObserver.observe(node, {
+    resizeObserver.observe(container);
+
+    mutationObserver = new MutationObserver(() => triggerUpdate());
+    mutationObserver.observe(innerBlock, {
       childList: true,
       characterData: true,
       subtree: true,
     });
-    return {
-      destroy() {
-        mutationObserver.disconnect();
-      },
+
+    return () => {
+      clearTimeout(debounceTimer);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
     };
-  };
+  });
 </script>
 
 <div
   bind:this={container}
   class={className}
-  style="width: fit-content; overflow: hidden;"
+  style="width: fit-content; height: 100%; overflow: hidden;"
 >
-  <div
-    bind:this={innerBlock}
-    use:setupSlotObserver
-    style="word-wrap: break-word;"
-  >
-    <slot />
+  <div bind:this={innerBlock} style="word-wrap: break-word; width: auto;">
+    {@render children?.()}
   </div>
 </div>
