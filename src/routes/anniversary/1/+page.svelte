@@ -653,7 +653,7 @@
     </div>
   </div>
 
-  <AudioControl src={bgm} />
+  <AudioControl src={bgm} autoplay={true} />
 </main>
 
 <style>

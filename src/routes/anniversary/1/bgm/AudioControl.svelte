@@ -5,14 +5,15 @@
   let isPlaying = $state(false);
   let volume = $state(0.25);
   let playSession = $state(0);
+  let retryTimer: ReturnType<typeof setTimeout>;
 
-  let { src }: AudioControlProps = $props();
+  let { src, autoplay = false }: AudioControlProps = $props();
 
   function playMusic() {
-    playSession += 1;
     audioRef
       .play()
       .then(() => {
+        playSession += 1;
         isPlaying = true;
       })
       .catch((e) => {
@@ -34,6 +35,35 @@
       pauseMusic();
     }
   }
+
+  // aggressive autoplay workaround
+  function attemptAutoplay() {
+    // 1. Stop if we are already playing
+    if (isPlaying) return;
+
+    // 2. Stop if the user has already manually interacted (playSession > 0)
+    if (playSession > 0) return;
+
+    // 3. Try to play
+    console.log("Attempting autoplay...");
+    audioRef
+      .play()
+      .then(() => {
+        isPlaying = true;
+        playSession += 1;
+      })
+      .catch((_e) => {
+        retryTimer = setTimeout(attemptAutoplay, 1000);
+      });
+  }
+
+  $effect(() => {
+    if (autoplay && !isPlaying && playSession === 0 && audioRef) {
+      attemptAutoplay();
+    }
+
+    return () => clearTimeout(retryTimer);
+  });
 </script>
 
 {#snippet iconPlay()}
