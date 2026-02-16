@@ -412,6 +412,10 @@
         </p>
 
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+          Don't forget to play the BGM while exploring the site!
+        </p>
+
+        <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
           Please note that this website is for optimized desktop browsers and
           might not look as intended on mobile :)
         </p>
