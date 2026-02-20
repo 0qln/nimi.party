@@ -407,8 +407,8 @@
 
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
           This fan website was created by a very small team along with Napling
-          Project. The website may not be 100% perfect but we hope Nimi and
-          Naplings enjoy this little project.
+          Project. It may not be 100% perfect but we hope Nimi and Naplings
+          enjoy this little project.
         </p>
 
         <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
