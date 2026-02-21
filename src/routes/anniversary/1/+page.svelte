@@ -482,6 +482,9 @@
             Lots of things happened in the past year! Let’s look back at the
             streams, events, and milestones Nimi has done!
           </p>
+          <p class={["font-medium", "text-xl", "px-1", "text-center"]}>
+            (ps: there's a scroll bar under the bottom leaves)
+          </p>
         </div>
 
         <div
